@@ -1,0 +1,6 @@
+// This is a reference bot config file.
+// Change the name of this fily to BotConfig.json
+// Put your discord application token in place of the "put your token in here" message
+{
+  "token": "Put your token in here"
+}
