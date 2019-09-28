@@ -23,20 +23,15 @@ namespace CrewBot
         static readonly ulong CREWADMINID = 543251167522586625;
         static readonly ulong COLOR_ROLE_ID = 584772355226861618;
         static SocketGuild crewGuild;
+        static readonly Logging logging = new Logging();
 
         // Create the client
         public static DiscordSocketClient client;
         // Instantiate the configuration for the bot. This is where the token is stored.
         BotConfig botConfig = new BotConfig();
         // Set Dictionary for cross-server channels
-        //public static Dictionary<ulong, MazeRoom> MazeRooms = new Dictionary<ulong, MazeRoom>();
         public static Dictionary<ulong, string> colorChoices = new Dictionary<ulong, string>();
         public static List<SocketRole> colorRoles = new List<SocketRole>();
-        //public static HashSet<SocketGuildUser> colorUsers = new HashSet<SocketGuildUser>();
-
-        public OverwritePermissions see = new OverwritePermissions(viewChannel: PermValue.Allow);
-
-        public OverwritePermissions hide = new OverwritePermissions();
 
         // Entry point, immediately run everything async
         public static void Main(/* string[] args */)
@@ -53,9 +48,6 @@ namespace CrewBot
             (new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Debug
-                //LogLevel = LogSeverity.Verbose
-                //LogLevel = LogSeverity.Info
-                //LogLevel = LogSeverity.Warning
             });
 
             // Set the timer interval
@@ -68,19 +60,51 @@ namespace CrewBot
             BotConfigurationAsync(ref botConfig);
 
             // Create event handlers and start the bot
-            client.Log += Log;
-            string token = botConfig.Token;
-
-            // Use Message Received for all message handling
-            client.MessageReceived += MessageReceived;
-            //client.UserUpdated += UserUpdated;
+            // discord.net handled event handlers
+            //client.ChannelCreated += ChannelCreated;
+            //client.ChannelDestroyed += ChannelDestroyed;
+            //client.ChannelUpdated += ChannelUpdated;
+            //client.Connected += Connected;
+            //client.CurrentUserUpdated += CurrentUserUpdated;
+            //client.Disconnected += Disconnected;
+            //client.GuildAvailable += GuildAvailable;
+            //client.GuildMembersDownloaded += GuildMembersDownloaded;
             //client.GuildMemberUpdated += GuildMemberUpdated;
-            //client.GuildMemberUpdated += MemberUpdate;
+            //client.GuildUnavailable += GuildUnavailable;
+            //client.GuildUpdated += GuildUpdated;
+            //client.JoinedGuild += JoinedGuild;
+            //client.LatencyUpdated += LatencyUpdated;
+            //client.LeftGuild += LeftGuild;
+            client.Log += Log;
+            //client.LoggedIn += LoggedIn;
+            //client.LoggedOut += LoggedOut;
+            //client.MessageDeleted += MessageDeleted;
+            client.MessageReceived += MessageReceived;
+            //client.MessagesBulkDeleted += MessagesBulkDeleted;
+            //client.MessageUpdated += MessageUpdated;
+            //client.ReactionAdded += ReactionAdded;
+            //client.ReactionRemoved += ReactionRemoved;
+            //client.ReactionsCleared += ReactionsCleared;
+            //client.Ready += Ready;
+            //client.RecipientAdded += RecipientAdded;
+            //client.RecipientRemoved += RecipientRemoved;
+            //client.RoleCreated += RoleCreated;
+            //client.RoleDeleted += RoleDeleted;
+            //client.RoleUpdated += RoleUpdated;
+            //client.UserBanned += UserBanned;
+            //client.UserIsTyping += UserIsTyping;
             //client.UserJoined += UserJoined;
-            //_ = ColorChangeSelection();
+            //client.UserLeft += UserLeft;
+            //client.UserUnbanned += UserUnbanned;
+            //client.UserUpdated += UserUpdated;
+            //client.UserVoiceStateUpdated += UserVoiceStateUpdated;
+            //client.VoiceServerUpdated += VoiceServerUpdated;
+
+            // Bot specific event handlers
             colorTimer.Elapsed += ColorChangeSelection;
 
             // Connect client
+            string token = botConfig.Token;
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
@@ -92,51 +116,25 @@ namespace CrewBot
             await Task.Delay(-1);
         }
 
-        //private Task Client_GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
         private static void FinalSetup()
         {
             System.Threading.Thread.Sleep(3000);
-            //crewGuild = client.GetGuild(CREWGUILDID);
             UpdateCrewGuildObject();
             foreach (ulong id in colorChoices.Keys)
             {
                 colorRoles.Add(crewGuild.GetRole(id));
             }
-
-            //foreach (var user in crewGuild.Users)
-            //{
-            //    if (user.Roles.Contains(crewGuild.GetRole(COLOR_ROLE_ID)))
-            //    {
-            //        colorUsers.Add(user);
-            //    }
-            //}
         }
 
         private static void UpdateCrewGuildObject()
         {
+            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program",$"UpdateCrewGuildObject"));
             crewGuild = client.GetGuild(CREWGUILDID);
         }
 
-        //private async Task GuildMemberUpdated(SocketUser beforeUser, SocketUser afterUser)
-        //{
-        //if(colorCount > 50)
-        //{
-        //    colorCount = 0;
-        //    _ = ColorChangeSelection();
-        //}
-
-        //if(crewGuild.GetUser(beforeUser.Id).Roles.ToList().Contains(afterUser COLOR_ROLE_ID)
-        //{
-
-        //}
-        //}
-
         private async Task MessageReceived(SocketMessage message)
         {
+            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageReceived"));
             if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0)
             {
                 EmbedBuilder builder = new EmbedBuilder()
@@ -188,32 +186,41 @@ namespace CrewBot
             {
                 if (message.Content.StartsWith($"+addcolors"))
                 {
+                    _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +addcolors"));
                     foreach (var color in message.MentionedRoles)
                     {
                         colorChoices.TryAdd(color.Id, color.Name);
                         colorRoles.Add(color);
                     }
+                    SerializeJsonObject($"json/ColorChoices.json", colorChoices);
                 }
                 if (message.Content.StartsWith($"+removecolors"))
                 {
+                    _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +removecolors"));
                     foreach (var color in message.MentionedRoles)
                     {
                         colorChoices.Remove(color.Id);
                         colorRoles.Remove(color);
                     }
+                    SerializeJsonObject($"json/ColorChoices.json", colorChoices);
                 }
+            }
+        }
 
-                using (StreamWriter file = File.CreateText("json/ColorChoices.json"))
-                {
-                    JsonSerializer serializer = new JsonSerializer();
-                    serializer.Serialize(file, colorChoices);
-                }
+        private void SerializeJsonObject(string filename, object value)
+        {
+            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"SerializeJson"));
+            using (StreamWriter file = File.CreateText($"{filename}"))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Serialize(file, value);
             }
         }
 
         //public async Task ColorChangeSelection(object sender, EventArgs e)
         async void ColorChangeSelection(object sender, EventArgs e)
         {
+            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"ColorChangeSelection"));
             UpdateCrewGuildObject();
             Random rand = new Random();
             SocketGuildUser user = crewGuild.GetRole(COLOR_ROLE_ID).Members.ElementAt(rand.Next(crewGuild.GetRole(COLOR_ROLE_ID).Members.Count()));
@@ -248,9 +255,9 @@ namespace CrewBot
             }
         }
 
-        private Task Log(LogMessage msg)
+        public static Task Log(LogMessage msg)
         {
-            Console.WriteLine(msg.ToString());
+            logging.Log(msg);
             return Task.CompletedTask;
         }
     }
