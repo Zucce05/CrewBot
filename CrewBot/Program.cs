@@ -17,18 +17,19 @@ namespace CrewBot
         public static Timer colorTimer;
 
         // STATIC VALUES FOR SERVER AND CHANNEL
-        static readonly ulong CREWGUILDID = 434740024316133376;
-        static readonly ulong CREWBOTCHANNELID = 584465458242256944;
-        static readonly ulong CREWBOTUSERID = 483772719985328130;
-        static readonly ulong CREWADMINID = 543251167522586625;
-        static readonly ulong COLOR_ROLE_ID = 584772355226861618;
+        static ulong CREWGUILDID; // = 434740024316133376;
+        static ulong CREWBOTDMCHANNELID; // = 584465458242256944;
+        static ulong CREWBOTLOGCHANNELID; // = 584465458242256944;
+        static ulong CREWBOTUSERID; // = 483772719985328130;
+        static ulong CREWADMINID; // = 543251167522586625;
+        static ulong COLOR_ROLE_ID; // = 584772355226861618;
         static SocketGuild crewGuild;
         static readonly Logging logging = new Logging();
 
         // Create the client
         public static DiscordSocketClient client;
         // Instantiate the configuration for the bot. This is where the token is stored.
-        BotConfig botConfig = new BotConfig();
+        public BotConfig botConfig = new BotConfig();
         // Set Dictionary for cross-server channels
         public static Dictionary<ulong, string> colorChoices = new Dictionary<ulong, string>();
         public static List<SocketRole> colorRoles = new List<SocketRole>();
@@ -102,7 +103,12 @@ namespace CrewBot
 
             // Bot specific event handlers
             colorTimer.Elapsed += ColorChangeSelection;
-
+            // Set botConfig Constants
+            CREWGUILDID = botConfig.GuildID;
+            CREWBOTDMCHANNELID = botConfig.DMChannelID;
+            CREWBOTLOGCHANNELID = botConfig.LogChannelID;
+            CREWBOTUSERID = botConfig.BotID;
+            COLOR_ROLE_ID = botConfig.ColorRoleID;
             // Connect client
             string token = botConfig.Token;
             await client.LoginAsync(TokenType.Bot, token);
@@ -128,14 +134,14 @@ namespace CrewBot
 
         private static void UpdateCrewGuildObject()
         {
-            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program",$"UpdateCrewGuildObject"));
+            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"UpdateCrewGuildObject"));
             crewGuild = client.GetGuild(CREWGUILDID);
         }
 
         private async Task MessageReceived(SocketMessage message)
         {
             _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageReceived"));
-            if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0)
+            if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0 && CREWBOTDMCHANNELID > 0)
             {
                 EmbedBuilder builder = new EmbedBuilder()
                 {
@@ -143,7 +149,7 @@ namespace CrewBot
                     Title = $"From: {message.Author.Username}",
                     Description = $"{message.Content}",
                 };
-                await crewGuild.GetTextChannel(CREWBOTCHANNELID).SendMessageAsync(String.Empty, false, builder.Build());
+                await crewGuild.GetTextChannel(CREWBOTDMCHANNELID).SendMessageAsync(String.Empty, false, builder.Build());
             }
 
             if (message.MentionedUsers.Count > 0)
@@ -158,7 +164,7 @@ namespace CrewBot
                             Title = $"From: {message.Author.Username} in {message.Channel.Name}",
                             Description = $"{message.Content}",
                         };
-                        await crewGuild.GetTextChannel(CREWBOTCHANNELID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
+                        await crewGuild.GetTextChannel(CREWBOTDMCHANNELID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
                         break;
                     }
                 }
@@ -175,7 +181,7 @@ namespace CrewBot
                             Title = $"From: {message.Author.Username} in {message.Channel.Name}",
                             Description = $"{message.Content}",
                         };
-                        await crewGuild.GetTextChannel(CREWBOTCHANNELID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
+                        await crewGuild.GetTextChannel(CREWBOTDMCHANNELID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
                         break;
                     }
 
@@ -204,10 +210,47 @@ namespace CrewBot
                     }
                     SerializeJsonObject($"json/ColorChoices.json", colorChoices);
                 }
+                if (message.Content.StartsWith($"+setlogchannel"))
+                {
+                    botConfig.LogChannelID = message.Channel.Id;
+                    SerializeJsonObject($"json/BotConfig.json", botConfig);
+                }
+                if (message.Content.StartsWith($"+removelogchannel"))
+                {
+                    botConfig.LogChannelID = 0;
+                    SerializeJsonObject($"json/BotConfig.json", botConfig);
+                }
+                if (message.Content.StartsWith($"+setdmchannel"))
+                {
+                    botConfig.DMChannelID = message.Channel.Id;
+                    SerializeJsonObject($"json/BotConfig.json", botConfig);
+                }
+                if (message.Content.StartsWith($"+removedmchannel"))
+                {
+                    botConfig.DMChannelID = 0;
+                    SerializeJsonObject($"json/BotConfig.json", botConfig);
+                }
+                if (message.Content.StartsWith($"+setcolorchange"))
+                {
+                    if (message.MentionedRoles.Count == 1)
+                    {
+                        botConfig.ColorRoleID = message.MentionedRoles.FirstOrDefault().Id;
+                        SerializeJsonObject($"json/BotConfig.json", botConfig);
+                    }
+                    else
+                    {
+                        await message.Channel.SendMessageAsync($"You must mention exactly one role for this command\nExample: ``+SetColorChange @MyColorChangeRole``");
+                    }
+                }
+                if (message.Content.StartsWith($"+removecolorchange"))
+                {
+                    botConfig.ColorRoleID = 0;
+                    SerializeJsonObject($"json/BotConfig.json", botConfig);
+                }
             }
         }
 
-        private void SerializeJsonObject(string filename, object value)
+        public void SerializeJsonObject(string filename, object value)
         {
             _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"SerializeJson"));
             using (StreamWriter file = File.CreateText($"{filename}"))
@@ -220,13 +263,23 @@ namespace CrewBot
         //public async Task ColorChangeSelection(object sender, EventArgs e)
         async void ColorChangeSelection(object sender, EventArgs e)
         {
-            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"ColorChangeSelection"));
-            UpdateCrewGuildObject();
-            Random rand = new Random();
-            SocketGuildUser user = crewGuild.GetRole(COLOR_ROLE_ID).Members.ElementAt(rand.Next(crewGuild.GetRole(COLOR_ROLE_ID).Members.Count()));
-            await user.RemoveRolesAsync(colorRoles);
-            await user.AddRoleAsync(crewGuild.GetRole(colorChoices.ElementAt(rand.Next(colorChoices.Count)).Key));
+            try
+            {
+                if (COLOR_ROLE_ID > 0)
+                {
+                    _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"ColorChangeSelection"));
+                    UpdateCrewGuildObject();
+                    Random rand = new Random();
+                    SocketGuildUser user = crewGuild.GetRole(COLOR_ROLE_ID).Members.ElementAt(rand.Next(crewGuild.GetRole(COLOR_ROLE_ID).Members.Count()));
+                    await user.RemoveRolesAsync(colorRoles);
+                    await user.AddRoleAsync(crewGuild.GetRole(colorChoices.ElementAt(rand.Next(colorChoices.Count)).Key));
 
+                }
+            }
+            catch (Discord.Net.HttpException exception)
+            {
+                _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"{exception.Message}"));
+            }
         }
 
         public static void BotConfigurationAsync(ref BotConfig bc)
