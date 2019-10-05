@@ -67,61 +67,127 @@ namespace CrewBot.classes
                 case LogSeverity.Critical:
                     lock (CriticalLogLock)
                     {
-                        StreamWriter CriticalLogWriter = File.AppendText("CriticalLog.txt");
-                        CriticalLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
-                        CriticalLogWriter.WriteLine($"{msg}");
-                        CriticalLogWriter.WriteLine($"------------------");
-                        CriticalLogWriter.Close();
+                        try
+                        {
+                            StreamWriter CriticalLogWriter = File.AppendText("CriticalLog.txt");
+                            CriticalLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
+                            CriticalLogWriter.WriteLine($"{msg}");
+                            CriticalLogWriter.WriteLine($"------------------");
+                            CriticalLogWriter.Close();
+                        }
+                        catch (System.InvalidOperationException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
+                        catch (System.IO.IOException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
                     }
                     break;
                 case LogSeverity.Error:
                     lock (ErrorLogLock)
                     {
-                        StreamWriter ErrorLogWriter = File.AppendText("ErrorLog.txt");
-                        ErrorLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
-                        ErrorLogWriter.WriteLine($"{msg}");
-                        ErrorLogWriter.WriteLine($"------------------");
-                        ErrorLogWriter.Close();
+                        try
+                        {
+                            StreamWriter ErrorLogWriter = File.AppendText("ErrorLog.txt");
+                            ErrorLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
+                            ErrorLogWriter.WriteLine($"{msg}");
+                            ErrorLogWriter.WriteLine($"------------------");
+                            ErrorLogWriter.Close();
+                        }
+                        catch (System.InvalidOperationException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
+                        catch (System.IO.IOException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
                     }
                     break;
                 case LogSeverity.Warning:
                     lock (WarningLogLock)
                     {
-                        StreamWriter WarningLogWriter = File.AppendText("WarningLog.txt");
-                        WarningLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
-                        WarningLogWriter.WriteLineAsync($"{msg}");
-                        WarningLogWriter.WriteLineAsync($"------------------");
-                        WarningLogWriter.Close();
+                        try
+                        {
+                            StreamWriter WarningLogWriter = File.AppendText("WarningLog.txt");
+                            WarningLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
+                            WarningLogWriter.WriteLineAsync($"{msg}");
+                            WarningLogWriter.WriteLineAsync($"------------------");
+                            WarningLogWriter.Close();
+                        }
+                        catch (System.InvalidOperationException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
+                        catch (System.IO.IOException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
                     }
                     break;
                 case LogSeverity.Info:
                     lock (InfoLogLock)
                     {
-                        StreamWriter InfoLogWriter = File.AppendText("InfoLog.txt");
-                        InfoLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
-                        InfoLogWriter.WriteLine($"{msg}");
-                        InfoLogWriter.WriteLine($"------------------");
-                        InfoLogWriter.Close();
+                        try
+                        {
+                            StreamWriter InfoLogWriter = File.AppendText("InfoLog.txt");
+                            InfoLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
+                            InfoLogWriter.WriteLine($"{msg}");
+                            InfoLogWriter.WriteLine($"------------------");
+                            InfoLogWriter.Close();
+                        }
+                        catch (System.InvalidOperationException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
+                        catch (System.IO.IOException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
                     }
                     break;
                 case LogSeverity.Verbose:
                     lock (VerboseLogLock)
                     {
-                        StreamWriter VerboseLogWriter = File.AppendText("VerboseLog.txt");
-                        VerboseLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
-                        VerboseLogWriter.WriteLineAsync($"{msg}");
-                        VerboseLogWriter.WriteLineAsync($"------------------");
-                        VerboseLogWriter.Close();
+                        try
+                        {
+                            StreamWriter VerboseLogWriter = File.AppendText("VerboseLog.txt");
+                            VerboseLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
+                            VerboseLogWriter.WriteLineAsync($"{msg}");
+                            VerboseLogWriter.WriteLineAsync($"------------------");
+                            VerboseLogWriter.Close();
+                        }
+                        catch (System.InvalidOperationException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
+                        catch (System.IO.IOException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
                     }
                     break;
                 case LogSeverity.Debug:
                     lock (DebugLogLock)
                     {
-                        StreamWriter DebugLogWriter = File.AppendText("DebugLog.txt");
-                        DebugLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
-                        DebugLogWriter.WriteLineAsync($"{msg}");
-                        DebugLogWriter.WriteLineAsync($"------------------");
-                        DebugLogWriter.Close();
+                        try
+                        {
+                            StreamWriter DebugLogWriter = File.AppendText("DebugLog.txt");
+                            DebugLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
+                            DebugLogWriter.WriteLineAsync($"{msg}");
+                            DebugLogWriter.WriteLineAsync($"------------------");
+                            DebugLogWriter.Close();
+                        }
+                        catch (System.InvalidOperationException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
+                        catch (System.IO.IOException exception)
+                        {
+                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
+                        }
                     }
                     break;
                 default:
