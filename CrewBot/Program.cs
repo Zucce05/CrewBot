@@ -21,7 +21,7 @@ namespace CrewBot
         static ulong CREWBOTDMCHANNELID; // = 584465458242256944;
         static ulong CREWBOTLOGCHANNELID; // = 584465458242256944;
         static ulong CREWBOTUSERID; // = 483772719985328130;
-        static ulong CREWADMINID; // = 543251167522586625;
+        static readonly ulong CREWADMINID; // = 543251167522586625;
         static ulong COLOR_ROLE_ID; // = 584772355226861618;
         static SocketGuild crewGuild;
         static readonly Logging logging = new Logging();
@@ -33,6 +33,7 @@ namespace CrewBot
         // Set Dictionary for cross-server channels
         public static Dictionary<ulong, string> colorChoices = new Dictionary<ulong, string>();
         public static List<SocketRole> colorRoles = new List<SocketRole>();
+        public static Dictionary<string, string> triggerResponses = new Dictionary<string, string>();
 
         // Entry point, immediately run everything async
         public static void Main(/* string[] args */)
@@ -79,7 +80,7 @@ namespace CrewBot
             client.Log += Log;
             //client.LoggedIn += LoggedIn;
             //client.LoggedOut += LoggedOut;
-            //client.MessageDeleted += MessageDeleted;
+            client.MessageDeleted += MessageDeleted;
             client.MessageReceived += MessageReceived;
             //client.MessagesBulkDeleted += MessagesBulkDeleted;
             //client.MessageUpdated += MessageUpdated;
@@ -122,6 +123,42 @@ namespace CrewBot
             await Task.Delay(-1);
         }
 
+        //private Task ReactionRemoved(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //private Task ReactionAdded(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //private Task MessageUpdated(Cacheable<IMessage, ulong> arg1, SocketMessage arg2, ISocketMessageChannel arg3)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        private async Task MessageDeleted(Cacheable<IMessage, ulong> deletedMessage, ISocketMessageChannel channel)
+        {
+            EmbedBuilder embedBuilder = new EmbedBuilder()
+            {
+                ThumbnailUrl = $"{crewGuild.IconUrl}",
+                Title = $"Message Deleted",
+                Description = $"{channel.Name}\nMessage ID:{deletedMessage.Id}"
+            };
+            if (deletedMessage.HasValue)
+            {
+                embedBuilder.Description += $"\nContent: {deletedMessage.Value.Content}";
+            }
+
+            await DiscordLogMessage(embedBuilder);
+        }
+
+        private async Task DiscordLogMessage(EmbedBuilder builder)
+        {
+            await crewGuild.GetTextChannel(CREWBOTLOGCHANNELID).SendMessageAsync(string.Empty, false, builder.Build());
+        }
+
         private static void FinalSetup()
         {
             System.Threading.Thread.Sleep(3000);
@@ -140,6 +177,8 @@ namespace CrewBot
 
         private async Task MessageReceived(SocketMessage message)
         {
+            bool adminCommand = false;
+
             _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageReceived"));
             if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0 && CREWBOTDMCHANNELID > 0)
             {
@@ -190,8 +229,42 @@ namespace CrewBot
 
             if (message.Author.Id == crewGuild.OwnerId)
             {
+                if (message.Content.StartsWith($"+addtrigger"))
+                {
+                    adminCommand = true;
+                    // +addtrigger keyword value
+                    string[] substring = message.Content.Split("~");
+                    if (triggerResponses.TryAdd(substring[1].Trim().ToLower(), substring[2].Trim()))
+                    {
+                        SerializeJsonObject($"json/triggerResponses.json", triggerResponses);
+                        await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} response {substring[2].Trim().ToLower()} added.");
+                    }
+                    else
+                    {
+                        await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} failed to be added.\n" +
+                            $"Use this format to add a triggerword ``+addtrigger -<keyword> -<desired response>``");
+                    }
+                }
+                if (message.Content.StartsWith($"+removetrigger"))
+                {
+                    adminCommand = true;
+                    string[] substring = message.Content.Split("~");
+                    {
+                        if (triggerResponses.Remove(substring[1].Trim().ToLower()))
+                        {
+                            await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} was removed");
+                            SerializeJsonObject($"json/triggerResponses.json", triggerResponses);
+                        }
+                        else
+                        {
+                            await message.Channel.SendMessageAsync($"{substring[1]} was **not** a triggerword or was not removed");
+                        }
+                    }
+                }
+
                 if (message.Content.StartsWith($"+addcolors"))
                 {
+                    adminCommand = true;
                     _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +addcolors"));
                     foreach (var color in message.MentionedRoles)
                     {
@@ -202,6 +275,7 @@ namespace CrewBot
                 }
                 if (message.Content.StartsWith($"+removecolors"))
                 {
+                    adminCommand = true;
                     _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +removecolors"));
                     foreach (var color in message.MentionedRoles)
                     {
@@ -212,26 +286,31 @@ namespace CrewBot
                 }
                 if (message.Content.StartsWith($"+setlogchannel"))
                 {
+                    adminCommand = true;
                     botConfig.LogChannelID = message.Channel.Id;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
                 if (message.Content.StartsWith($"+removelogchannel"))
                 {
+                    adminCommand = true;
                     botConfig.LogChannelID = 0;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
                 if (message.Content.StartsWith($"+setdmchannel"))
                 {
+                    adminCommand = true;
                     botConfig.DMChannelID = message.Channel.Id;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
                 if (message.Content.StartsWith($"+removedmchannel"))
                 {
+                    adminCommand = true;
                     botConfig.DMChannelID = 0;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
                 if (message.Content.StartsWith($"+setcolorchange"))
                 {
+                    adminCommand = true;
                     if (message.MentionedRoles.Count == 1)
                     {
                         botConfig.ColorRoleID = message.MentionedRoles.FirstOrDefault().Id;
@@ -244,8 +323,21 @@ namespace CrewBot
                 }
                 if (message.Content.StartsWith($"+removecolorchange"))
                 {
+                    adminCommand = true;
                     botConfig.ColorRoleID = 0;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
+                }
+            }
+
+            if (!message.Author.IsBot && !adminCommand)
+            {
+                foreach (KeyValuePair<string, string> kvp in triggerResponses)
+                {
+                    if (message.Content.Contains(kvp.Key))
+                    {
+                        await message.Channel.SendMessageAsync($"{kvp.Value}");
+                        break;
+                    }
                 }
             }
         }
@@ -280,6 +372,14 @@ namespace CrewBot
             {
                 _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"{exception.Message}"));
             }
+            catch (System.Net.Http.HttpRequestException exception)
+            {
+                _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"{exception.Message}"));
+            }
+            catch (System.OperationCanceledException exception)
+            {
+                _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"{exception.Message}"));
+            }
         }
 
         public static void BotConfigurationAsync(ref BotConfig bc)
@@ -301,6 +401,17 @@ namespace CrewBot
                 // This is good for deployment where I've got the config with the executable
                 reader = new JsonTextReader(new StreamReader("json/ColorChoices.json"));
                 colorChoices = JsonConvert.DeserializeObject<Dictionary<ulong, string>>(File.ReadAllText("json/ColorChoices.json"));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
+            }
+
+            try
+            {
+                // This is good for deployment where I've got the config with the executable
+                reader = new JsonTextReader(new StreamReader("json/triggerResponses.json"));
+                triggerResponses = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("json/triggerResponses.json"));
             }
             catch (Exception e)
             {
