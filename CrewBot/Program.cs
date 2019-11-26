@@ -1,4 +1,4 @@
-﻿using CrewBot.classes;
+﻿using CrewBot.Classes;
 using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
@@ -8,6 +8,9 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Timers;
+using CrewBot.Classes.FactoryClasses;
+using CrewBot.Interfaces;
+using System.Collections.Concurrent;
 
 namespace CrewBot
 {
@@ -16,14 +19,7 @@ namespace CrewBot
         // Timer for the color role
         public static Timer colorTimer;
 
-        // STATIC VALUES FOR SERVER AND CHANNEL
-        static ulong CREWGUILDID; // = 434740024316133376;
-        static ulong CREWBOTDMCHANNELID; // = 584465458242256944;
-        static ulong CREWBOTLOGCHANNELID; // = 584465458242256944;
-        static ulong CREWBOTUSERID; // = 483772719985328130;
-        static readonly ulong CREWADMINID; // = 543251167522586625;
-        static ulong COLOR_ROLE_ID; // = 584772355226861618;
-        static SocketGuild crewGuild;
+        public static SocketGuild crewGuild;
         static readonly Logging logging = new Logging();
 
         // Create the client
@@ -31,9 +27,10 @@ namespace CrewBot
         // Instantiate the configuration for the bot. This is where the token is stored.
         public BotConfig botConfig = new BotConfig();
         // Set Dictionary for cross-server channels
-        public static Dictionary<ulong, string> colorChoices = new Dictionary<ulong, string>();
-        public static List<SocketRole> colorRoles = new List<SocketRole>();
-        public static Dictionary<string, string> triggerResponses = new Dictionary<string, string>();
+        public static ConcurrentDictionary<ulong, string> colorChoices = new ConcurrentDictionary<ulong, string>();
+        //public static List<SocketRole> colorRoles = new List<SocketRole>();
+        public static ConcurrentDictionary<string, string> triggerResponses = new ConcurrentDictionary<string, string>();
+        public static ConcurrentDictionary<ulong, string> messageCache = new ConcurrentDictionary<ulong, string>();
 
         // Entry point, immediately run everything async
         public static void Main(/* string[] args */)
@@ -105,17 +102,17 @@ namespace CrewBot
             // Bot specific event handlers
             colorTimer.Elapsed += ColorChangeSelection;
             // Set botConfig Constants
-            CREWGUILDID = botConfig.GuildID;
-            CREWBOTDMCHANNELID = botConfig.DMChannelID;
-            CREWBOTLOGCHANNELID = botConfig.LogChannelID;
-            CREWBOTUSERID = botConfig.BotID;
-            COLOR_ROLE_ID = botConfig.ColorRoleID;
+            //CREWGUILDID = botConfig.GuildID;
+            //CREWBOTDMCHANNELID = botConfig.DMChannelID;
+            //CREWBOTLOGCHANNELID = botConfig.LogChannelID;
+            //CREWBOTUSERID = botConfig.BotID;
+            //COLOR_ROLE_ID = botConfig.ColorRoleID;
             // Connect client
             string token = botConfig.Token;
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
-            FinalSetup();
+            FinalSetup(botConfig);
 
             colorTimer.Enabled = true;
 
@@ -156,31 +153,30 @@ namespace CrewBot
 
         private async Task DiscordLogMessage(EmbedBuilder builder)
         {
-            await crewGuild.GetTextChannel(CREWBOTLOGCHANNELID).SendMessageAsync(string.Empty, false, builder.Build());
+            await crewGuild.GetTextChannel(botConfig.LogChannelID).SendMessageAsync(string.Empty, false, builder.Build());
         }
 
-        private static void FinalSetup()
+        private static void FinalSetup(BotConfig botConfig)
         {
             System.Threading.Thread.Sleep(3000);
-            UpdateCrewGuildObject();
-            foreach (ulong id in colorChoices.Keys)
-            {
-                colorRoles.Add(crewGuild.GetRole(id));
-            }
+            UpdateCrewGuildObject(botConfig);
+            //foreach (ulong id in colorChoices.Keys)
+            //{
+            //    colorRoles.Add(crewGuild.GetRole(id));
+            //}
         }
 
-        private static void UpdateCrewGuildObject()
+        private static void UpdateCrewGuildObject(BotConfig bc)
         {
             _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"UpdateCrewGuildObject"));
-            crewGuild = client.GetGuild(CREWGUILDID);
+            crewGuild = client.GetGuild(bc.GuildID);
         }
 
         private async Task MessageReceived(SocketMessage message)
         {
-            bool adminCommand = false;
 
             _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageReceived"));
-            if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0 && CREWBOTDMCHANNELID > 0)
+            if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0 && botConfig.DMChannelID > 0)
             {
                 EmbedBuilder builder = new EmbedBuilder()
                 {
@@ -188,14 +184,14 @@ namespace CrewBot
                     Title = $"From: {message.Author.Username}",
                     Description = $"{message.Content}",
                 };
-                await crewGuild.GetTextChannel(CREWBOTDMCHANNELID).SendMessageAsync(String.Empty, false, builder.Build());
+                await crewGuild.GetTextChannel(botConfig.DMChannelID).SendMessageAsync(String.Empty, false, builder.Build());
             }
 
             if (message.MentionedUsers.Count > 0)
             {
                 foreach (SocketUser user in message.MentionedUsers)
                 {
-                    if (user.Id == CREWBOTUSERID)
+                    if (user.Id == botConfig.BotID)
                     {
                         EmbedBuilder builder = new EmbedBuilder()
                         {
@@ -203,7 +199,7 @@ namespace CrewBot
                             Title = $"From: {message.Author.Username} in {message.Channel.Name}",
                             Description = $"{message.Content}",
                         };
-                        await crewGuild.GetTextChannel(CREWBOTDMCHANNELID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
+                        await crewGuild.GetTextChannel(botConfig.DMChannelID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
                         break;
                     }
                 }
@@ -212,7 +208,7 @@ namespace CrewBot
             {
                 foreach (SocketRole role in message.MentionedRoles)
                 {
-                    if (role.Id == CREWADMINID)
+                    if (role.Id == botConfig.AdminID)
                     {
                         EmbedBuilder builder = new EmbedBuilder()
                         {
@@ -220,126 +216,45 @@ namespace CrewBot
                             Title = $"From: {message.Author.Username} in {message.Channel.Name}",
                             Description = $"{message.Content}",
                         };
-                        await crewGuild.GetTextChannel(CREWBOTDMCHANNELID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
+                        await crewGuild.GetTextChannel(botConfig.DMChannelID).SendMessageAsync($"{message.GetJumpUrl()}", false, builder.Build());
                         break;
                     }
 
                 }
             }
 
+            MessageCommandFactory.MessageCommand(message, botConfig, crewGuild, triggerResponses, colorChoices);
+
+            // Unit test for MessageCommandFactory
+            // if message startswith +trigger
+                // x is TriggerCommand
+
+
             if (message.Author.Id == crewGuild.OwnerId)
             {
-                if (message.Content.StartsWith($"+addtrigger"))
-                {
-                    adminCommand = true;
-                    // +addtrigger keyword value
-                    string[] substring = message.Content.Split("~");
-                    if (triggerResponses.TryAdd(substring[1].Trim().ToLower(), substring[2].Trim()))
-                    {
-                        SerializeJsonObject($"json/triggerResponses.json", triggerResponses);
-                        await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} response {substring[2].Trim().ToLower()} added.");
-                    }
-                    else
-                    {
-                        await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} failed to be added.\n" +
-                            $"Use this format to add a triggerword ``+addtrigger -<keyword> -<desired response>``");
-                    }
-                }
-                if (message.Content.StartsWith($"+removetrigger"))
-                {
-                    adminCommand = true;
-                    string[] substring = message.Content.Split("~");
-                    {
-                        if (triggerResponses.Remove(substring[1].Trim().ToLower()))
-                        {
-                            await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} was removed");
-                            SerializeJsonObject($"json/triggerResponses.json", triggerResponses);
-                        }
-                        else
-                        {
-                            await message.Channel.SendMessageAsync($"{substring[1]} was **not** a triggerword or was not removed");
-                        }
-                    }
-                }
-
-                if (message.Content.StartsWith($"+addcolors"))
-                {
-                    adminCommand = true;
-                    _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +addcolors"));
-                    foreach (var color in message.MentionedRoles)
-                    {
-                        colorChoices.TryAdd(color.Id, color.Name);
-                        colorRoles.Add(color);
-                    }
-                    SerializeJsonObject($"json/ColorChoices.json", colorChoices);
-                }
-                if (message.Content.StartsWith($"+removecolors"))
-                {
-                    adminCommand = true;
-                    _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +removecolors"));
-                    foreach (var color in message.MentionedRoles)
-                    {
-                        colorChoices.Remove(color.Id);
-                        colorRoles.Remove(color);
-                    }
-                    SerializeJsonObject($"json/ColorChoices.json", colorChoices);
-                }
                 if (message.Content.StartsWith($"+setlogchannel"))
                 {
-                    adminCommand = true;
                     botConfig.LogChannelID = message.Channel.Id;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
                 if (message.Content.StartsWith($"+removelogchannel"))
                 {
-                    adminCommand = true;
                     botConfig.LogChannelID = 0;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
                 if (message.Content.StartsWith($"+setdmchannel"))
                 {
-                    adminCommand = true;
                     botConfig.DMChannelID = message.Channel.Id;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
                 if (message.Content.StartsWith($"+removedmchannel"))
                 {
-                    adminCommand = true;
                     botConfig.DMChannelID = 0;
-                    SerializeJsonObject($"json/BotConfig.json", botConfig);
-                }
-                if (message.Content.StartsWith($"+setcolorchange"))
-                {
-                    adminCommand = true;
-                    if (message.MentionedRoles.Count == 1)
-                    {
-                        botConfig.ColorRoleID = message.MentionedRoles.FirstOrDefault().Id;
-                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                    }
-                    else
-                    {
-                        await message.Channel.SendMessageAsync($"You must mention exactly one role for this command\nExample: ``+SetColorChange @MyColorChangeRole``");
-                    }
-                }
-                if (message.Content.StartsWith($"+removecolorchange"))
-                {
-                    adminCommand = true;
-                    botConfig.ColorRoleID = 0;
                     SerializeJsonObject($"json/BotConfig.json", botConfig);
                 }
             }
 
-            if (!message.Author.IsBot && !adminCommand)
-            {
-                foreach (KeyValuePair<string, string> kvp in triggerResponses)
-                {
-                    if (message.Content.Contains(kvp.Key))
-                    {
-                        await message.Channel.SendMessageAsync($"{kvp.Value}");
-                        break;
-                    }
-                }
-            }
+
         }
 
         public void SerializeJsonObject(string filename, object value)
@@ -357,12 +272,18 @@ namespace CrewBot
         {
             try
             {
-                if (COLOR_ROLE_ID > 0)
+                if (botConfig.ColorRoleID > 0)
                 {
+                    List<SocketRole> colorRoles = new List<SocketRole>();
+                    foreach (ulong id in colorChoices.Keys)
+                    {
+                        colorRoles.Add(crewGuild.GetRole(id));
+                    }
+
                     _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"ColorChangeSelection"));
-                    UpdateCrewGuildObject();
+                    UpdateCrewGuildObject(botConfig);
                     Random rand = new Random();
-                    SocketGuildUser user = crewGuild.GetRole(COLOR_ROLE_ID).Members.ElementAt(rand.Next(crewGuild.GetRole(COLOR_ROLE_ID).Members.Count()));
+                    SocketGuildUser user = crewGuild.GetRole(botConfig.ColorRoleID).Members.ElementAt(rand.Next(crewGuild.GetRole(botConfig.ColorRoleID).Members.Count()));
                     await user.RemoveRolesAsync(colorRoles);
                     await user.AddRoleAsync(crewGuild.GetRole(colorChoices.ElementAt(rand.Next(colorChoices.Count)).Key));
 
@@ -400,7 +321,7 @@ namespace CrewBot
             {
                 // This is good for deployment where I've got the config with the executable
                 reader = new JsonTextReader(new StreamReader("json/ColorChoices.json"));
-                colorChoices = JsonConvert.DeserializeObject<Dictionary<ulong, string>>(File.ReadAllText("json/ColorChoices.json"));
+                colorChoices = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, string>>(File.ReadAllText("json/ColorChoices.json"));
             }
             catch (Exception e)
             {
@@ -411,7 +332,18 @@ namespace CrewBot
             {
                 // This is good for deployment where I've got the config with the executable
                 reader = new JsonTextReader(new StreamReader("json/triggerResponses.json"));
-                triggerResponses = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("json/triggerResponses.json"));
+                triggerResponses = JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(File.ReadAllText("json/triggerResponses.json"));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
+            }
+
+            try
+            {
+                // This is good for deployment where I've got the config with the executable
+                reader = new JsonTextReader(new StreamReader("json/messageCache.json"));
+                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, string>>(File.ReadAllText("json/triggerResponses.json"));
             }
             catch (Exception e)
             {
