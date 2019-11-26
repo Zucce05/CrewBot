@@ -105,7 +105,7 @@ namespace CrewBot.Classes.FactoryClasses
                 }
 
             }
-            else if (!message.Author.IsBot)
+            if (!message.Author.IsBot)
             {
                 if (message.Content.ToLower().StartsWith($"evetime"))
                 {
