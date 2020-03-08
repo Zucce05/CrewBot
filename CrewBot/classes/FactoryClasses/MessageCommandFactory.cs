@@ -16,14 +16,21 @@ namespace CrewBot.Classes.FactoryClasses
         {
             bool serverOwner = message.Author.Id == guild.Owner.Id;
             bool AdminAuthor = false;
-
-            foreach (SocketRole role in guild.GetUser(message.Author.Id).Roles)
+            bool triggerAdded = false;
+            try
             {
-                if (role.Id == botConfig.AdminID)
+                foreach (SocketRole role in guild.GetUser(message.Author.Id).Roles)
                 {
-                    AdminAuthor = true;
-                    break;
+                    if (role.Id == botConfig.AdminID)
+                    {
+                        AdminAuthor = true;
+                        break;
+                    }
                 }
+            }
+            catch(System.NullReferenceException e)
+            {
+                await Program.Log(new Discord.LogMessage(Discord.LogSeverity.Error, $"MessageCommand", $"{e.Message}"));
             }
 
             string[] msgBlocks = message.Content.ToLower().Split(" ");
@@ -37,6 +44,7 @@ namespace CrewBot.Classes.FactoryClasses
                         case "trigger":
                             if (serverOwner || (botConfig.TriggerAdminEnabled))
                             {
+                                triggerAdded = true;
                                 TriggerCommand trigger = new TriggerCommand();
                                 await trigger.AdminAction(message, triggerResponses, botConfig, botConfig.Prefix, serverOwner);
                             }
@@ -112,7 +120,7 @@ namespace CrewBot.Classes.FactoryClasses
                     await message.Channel.SendMessageAsync($"Current Eve game time: {DateTime.UtcNow.ToString()}");
                 }
 
-                if (botConfig.TriggerEnabled)
+                if (botConfig.TriggerEnabled && !triggerAdded)
                 {
                     foreach (KeyValuePair<string, string> kvp in triggerResponses)
                     {

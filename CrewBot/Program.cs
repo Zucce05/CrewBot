@@ -18,6 +18,7 @@ namespace CrewBot
     {
         // Timer for the color role
         public static Timer colorTimer;
+        public static Timer messageDeleteTimer;
 
         public static SocketGuild crewGuild;
         static readonly Logging logging = new Logging();
@@ -30,7 +31,8 @@ namespace CrewBot
         public static ConcurrentDictionary<ulong, string> colorChoices = new ConcurrentDictionary<ulong, string>();
         //public static List<SocketRole> colorRoles = new List<SocketRole>();
         public static ConcurrentDictionary<string, string> triggerResponses = new ConcurrentDictionary<string, string>();
-        public static ConcurrentDictionary<ulong, string> messageCache = new ConcurrentDictionary<ulong, string>();
+        //public static ConcurrentDictionary<ulong, string> messageCache = new ConcurrentDictionary<ulong, string>();
+        public static ConcurrentDictionary<ulong, SocketMessage> messageCache = new ConcurrentDictionary<ulong, SocketMessage>();
 
         // Entry point, immediately run everything async
         public static void Main(/* string[] args */)
@@ -53,6 +55,13 @@ namespace CrewBot
             colorTimer = new Timer
             {
                 Interval = 100000
+            };
+
+            // Set the Message Deletion timer to comply with Discord TOS
+            // No content over 14 days may be cached - Check hourly for content exending past 14 days within the next hour
+            messageDeleteTimer = new Timer
+            {
+                Interval = 3600000
             };
 
             // Populate the configuration from the BotConfig.json file for the client to use when connecting
@@ -101,6 +110,7 @@ namespace CrewBot
 
             // Bot specific event handlers
             colorTimer.Elapsed += ColorChangeSelection;
+            messageDeleteTimer.Elapsed += ClearMessageCache;
             // Set botConfig Constants
             //CREWGUILDID = botConfig.GuildID;
             //CREWBOTDMCHANNELID = botConfig.DMChannelID;
@@ -115,9 +125,22 @@ namespace CrewBot
             FinalSetup(botConfig);
 
             colorTimer.Enabled = true;
+            messageDeleteTimer.Enabled = true;
 
             // Wait for events to happen
             await Task.Delay(-1);
+        }
+
+        private async void ClearMessageCache(object sender, EventArgs e)
+        {
+            foreach(SocketMessage message in messageCache.Values)
+            {
+                if(message.Timestamp.AddDays(13).AddHours(23) < DateTime.Now)
+                {
+                    _ = messageCache.TryRemove(message.Id, out _);
+                    await Log(new LogMessage(LogSeverity.Verbose, $"Program", $"Message cleared from messageCache"));
+                }
+            }
         }
 
         //private Task ReactionRemoved(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2, SocketReaction arg3)
@@ -141,11 +164,12 @@ namespace CrewBot
             {
                 ThumbnailUrl = $"{crewGuild.IconUrl}",
                 Title = $"Message Deleted",
-                Description = $"{channel.Name}\nMessage ID:{deletedMessage.Id}"
+                Description = $"{channel.Name}\n**Message ID:** {deletedMessage.Id}"
             };
-            if (deletedMessage.HasValue)
+            if (messageCache.TryRemove(deletedMessage.Id, out SocketMessage message))
             {
-                embedBuilder.Description += $"\nContent: {deletedMessage.Value.Content}";
+                embedBuilder.Description += $"\n**Content:** {message.Content}\n**Author:** {message.Author.Username}";
+                embedBuilder.ThumbnailUrl = message.Author.GetAvatarUrl();
             }
 
             await DiscordLogMessage(embedBuilder);
@@ -174,6 +198,22 @@ namespace CrewBot
 
         private async Task MessageReceived(SocketMessage message)
         {
+            try
+            {
+                if (messageCache.TryAdd(message.Id, message))
+                {
+                    _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", "MessageReceived: TryAdd:messageCache success"));
+                    SerializeJsonObject("messageCache.json", messageCache);
+                }
+                else
+                {
+                    _ = Log(new LogMessage(LogSeverity.Error, $"Program", "MessageReceived: TryAdd:messageCache failed"));
+                }
+            }
+            catch (Exception e)
+            {
+                _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"MessageReceived: TryAdd:messageCache Error: {e.Message}"));
+            }
 
             _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageReceived"));
             if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0 && botConfig.DMChannelID > 0)
@@ -222,8 +262,14 @@ namespace CrewBot
 
                 }
             }
-
-            MessageCommandFactory.MessageCommand(message, botConfig, crewGuild, triggerResponses, colorChoices);
+            try
+            {
+                MessageCommandFactory.MessageCommand(message, botConfig, crewGuild, triggerResponses, colorChoices);
+            }
+            catch (System.NullReferenceException e)
+            {
+                await Log(new LogMessage(LogSeverity.Error, $"MessageCommand", $"{e.Message}"));
+            }
 
             // Unit test for MessageCommandFactory
             // if message startswith +trigger
@@ -343,7 +389,7 @@ namespace CrewBot
             {
                 // This is good for deployment where I've got the config with the executable
                 reader = new JsonTextReader(new StreamReader("json/messageCache.json"));
-                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, string>>(File.ReadAllText("json/triggerResponses.json"));
+                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, SocketMessage>>(File.ReadAllText("json/triggerResponses.json"));
             }
             catch (Exception e)
             {
