@@ -32,7 +32,7 @@ namespace CrewBot
         //public static List<SocketRole> colorRoles = new List<SocketRole>();
         public static ConcurrentDictionary<string, string> triggerResponses = new ConcurrentDictionary<string, string>();
         //public static ConcurrentDictionary<ulong, string> messageCache = new ConcurrentDictionary<ulong, string>();
-        public static ConcurrentDictionary<ulong, SocketMessage> messageCache = new ConcurrentDictionary<ulong, SocketMessage>();
+        public static ConcurrentDictionary<ulong, LoggedMessage> messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
 
         // Entry point, immediately run everything async
         public static void Main(/* string[] args */)
@@ -133,11 +133,11 @@ namespace CrewBot
 
         private async void ClearMessageCache(object sender, EventArgs e)
         {
-            foreach(SocketMessage message in messageCache.Values)
+            foreach(LoggedMessage message in messageCache.Values)
             {
-                if(message.Timestamp.AddDays(13).AddHours(23) < DateTime.Now)
+                if(message.messageDateTimeOffset.AddDays(13).AddHours(23) < DateTime.Now)
                 {
-                    _ = messageCache.TryRemove(message.Id, out _);
+                    _ = messageCache.TryRemove(message.messageID, out _);
                     await Log(new LogMessage(LogSeverity.Verbose, $"Program", $"Message cleared from messageCache"));
                 }
             }
@@ -166,10 +166,10 @@ namespace CrewBot
                 Title = $"Message Deleted",
                 Description = $"{channel.Name}\n**Message ID:** {deletedMessage.Id}"
             };
-            if (messageCache.TryRemove(deletedMessage.Id, out SocketMessage message))
+            if (messageCache.TryRemove(deletedMessage.Id, out LoggedMessage message))
             {
-                embedBuilder.Description += $"\n**Content:** {message.Content}\n**Author:** {message.Author.Username}";
-                embedBuilder.ThumbnailUrl = message.Author.GetAvatarUrl();
+                embedBuilder.Description += $"\n**Content:** {message.messageContent}\n**Author:** {message.messageAuthorUsername}";
+                embedBuilder.ThumbnailUrl = message.messageAvatarURL;
             }
 
             await DiscordLogMessage(embedBuilder);
@@ -200,7 +200,8 @@ namespace CrewBot
         {
             try
             {
-                if (messageCache.TryAdd(message.Id, message))
+                LoggedMessage messageToLog = new LoggedMessage(message);
+                if (messageCache.TryAdd(message.Id, messageToLog))
                 {
                     _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", "MessageReceived: TryAdd:messageCache success"));
                     SerializeJsonObject("messageCache.json", messageCache);
@@ -389,7 +390,7 @@ namespace CrewBot
             {
                 // This is good for deployment where I've got the config with the executable
                 reader = new JsonTextReader(new StreamReader("json/messageCache.json"));
-                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, SocketMessage>>(File.ReadAllText("json/triggerResponses.json"));
+                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, LoggedMessage>>(File.ReadAllText("json/triggerResponses.json"));
             }
             catch (Exception e)
             {
