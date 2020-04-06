@@ -7,6 +7,7 @@ namespace CrewBot.Classes
 {
     public class LoggedMessage
     {
+        public LoggedMessage() { }
         public LoggedMessage(SocketMessage message)
         {
             userID = message.Author.Id;
@@ -19,13 +20,13 @@ namespace CrewBot.Classes
             messageChannelID = message.Channel.Id;
         }
 
-        public ulong userID { get; private set; }
-        public ulong messageID { get; private set; }
-        public string messageContent { get; private set; }
-        public DateTimeOffset messageDateTimeOffset { get; private set; }
-        public string messageAvatarURL { get; private set; }
-        public string messageAuthorUsername { get; private set; }
-        public string messageChannelName { get; private set; }
-        public ulong messageChannelID { get; private set; }
+        public ulong userID { get; set; }
+        public ulong messageID { get; set; }
+        public string messageContent { get; set; }
+        public DateTimeOffset messageDateTimeOffset { get; set; }
+        public string messageAvatarURL { get; set; }
+        public string messageAuthorUsername { get; set; }
+        public string messageChannelName { get; set; }
+        public ulong messageChannelID { get; set; }
     }
 }

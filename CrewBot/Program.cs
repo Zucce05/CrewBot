@@ -31,8 +31,8 @@ namespace CrewBot
         public static ConcurrentDictionary<ulong, string> colorChoices = new ConcurrentDictionary<ulong, string>();
         //public static List<SocketRole> colorRoles = new List<SocketRole>();
         public static ConcurrentDictionary<string, string> triggerResponses = new ConcurrentDictionary<string, string>();
-        //public static ConcurrentDictionary<ulong, string> messageCache = new ConcurrentDictionary<ulong, string>();
-        public static ConcurrentDictionary<ulong, LoggedMessage> messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
+        //public static ConcurrentDictionary<ulong, LoggedMessage> messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
+        public static ConcurrentDictionary<ulong, LoggedMessage> messageCache;
 
         // Entry point, immediately run everything async
         public static void Main(/* string[] args */)
@@ -101,8 +101,8 @@ namespace CrewBot
             //client.RoleUpdated += RoleUpdated;
             //client.UserBanned += UserBanned;
             //client.UserIsTyping += UserIsTyping;
-            //client.UserJoined += UserJoined;
-            //client.UserLeft += UserLeft;
+            client.UserJoined += UserJoined;
+            client.UserLeft += UserLeft;
             //client.UserUnbanned += UserUnbanned;
             //client.UserUpdated += UserUpdated;
             //client.UserVoiceStateUpdated += UserVoiceStateUpdated;
@@ -140,6 +140,24 @@ namespace CrewBot
                     _ = messageCache.TryRemove(message.messageID, out _);
                     await Log(new LogMessage(LogSeverity.Verbose, $"Program", $"Message cleared from messageCache"));
                 }
+            }
+        }
+
+        private async Task UserJoined(SocketGuildUser user)
+        {
+            if(botConfig.GeneralChannelID != 0)
+            {
+                string msg = $"Welcome <@{user.Id}>! Go to <#454538448418766858> to pick a color and unlock channels!\nWe hope you enjoy it here!";
+                await client.GetGuild(botConfig.GuildID).GetTextChannel(botConfig.GeneralChannelID).SendMessageAsync(msg);
+            }
+        }
+
+        private async Task UserLeft(SocketGuildUser user)
+        {
+            if (botConfig.GeneralChannelID != 0)
+            {
+                string msg = $"<@{user.Id}> just left.\nhttps://media.giphy.com/media/2ept7eRuyq98s/giphy.gif";
+                await client.GetGuild(botConfig.GuildID).GetTextChannel(botConfig.GeneralChannelID).SendMessageAsync(msg);
             }
         }
 
@@ -204,7 +222,7 @@ namespace CrewBot
                 if (messageCache.TryAdd(message.Id, messageToLog))
                 {
                     _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", "MessageReceived: TryAdd:messageCache success"));
-                    SerializeJsonObject("messageCache.json", messageCache);
+                    SerializeJsonObject("json/messageCache.json", messageCache);
                 }
                 else
                 {
@@ -361,7 +379,7 @@ namespace CrewBot
             }
             catch (Exception e)
             {
-                Console.WriteLine($"BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
+                Console.WriteLine($"BotConfig->BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
             }
 
             try
@@ -372,7 +390,7 @@ namespace CrewBot
             }
             catch (Exception e)
             {
-                Console.WriteLine($"BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
+                Console.WriteLine($"BotConfig->ColorChoices: Executable Level SetUp Exception:\n\t{e.Message}");
             }
 
             try
@@ -383,18 +401,19 @@ namespace CrewBot
             }
             catch (Exception e)
             {
-                Console.WriteLine($"BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
+                Console.WriteLine($"BotConfig->triggerResponses: Executable Level SetUp Exception:\n\t{e.Message}");
             }
 
             try
             {
                 // This is good for deployment where I've got the config with the executable
+                messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
                 reader = new JsonTextReader(new StreamReader("json/messageCache.json"));
-                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, LoggedMessage>>(File.ReadAllText("json/triggerResponses.json"));
+                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, LoggedMessage>>(File.ReadAllText("json/messageCache.json"));
             }
             catch (Exception e)
             {
-                Console.WriteLine($"BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
+                Console.WriteLine($"BotConfig->messageCache: Executable Level SetUp Exception:\n\t{e.Message}");
             }
         }
 

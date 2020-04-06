@@ -14,6 +14,7 @@ namespace CrewBot.Classes
         public ulong DMChannelID { get; set; }
         public ulong BotID { get; set; }
         public ulong AdminID { get; set; }
+        public ulong GeneralChannelID { get; set; }
         public string Prefix { get; set; }
 
         // Color Settings

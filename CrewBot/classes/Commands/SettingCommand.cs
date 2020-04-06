@@ -65,6 +65,25 @@ namespace CrewBot.Classes.Commands
                 case "color":
                     break;
                 case "general":
+                    if (msg.Length > 2)
+                    {
+                        switch (msg[2])
+                        {
+                            case "set":
+                                if (message.MentionedChannels.Count == 1)
+                                {
+                                    botConfig.GeneralChannelID = message.MentionedChannels.FirstOrDefault().Id;
+                                    SerializeJsonObject($"json/BotConfig.json", botConfig);
+                                    await message.Channel.SendMessageAsync($"General Channel is now #{message.MentionedChannels.FirstOrDefault().Name}, ID:{message.MentionedChannels.FirstOrDefault().Id}");
+                                }
+                                break;
+                            case "unset":
+                                botConfig.LogChannelID = 0;
+                                SerializeJsonObject($"json/BotConfig.json", botConfig);
+                                await message.Channel.SendMessageAsync($"General Channel has been unset");
+                                break;
+                        }
+                    }
                     break;
                 default:
                     await UserAction(message, botConfig);
