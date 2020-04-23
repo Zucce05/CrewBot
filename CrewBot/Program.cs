@@ -156,7 +156,7 @@ namespace CrewBot
         {
             if (botConfig.GeneralChannelID != 0)
             {
-                string msg = $"<@{user.Id}> just left.\nhttps://media.giphy.com/media/2ept7eRuyq98s/giphy.gif";
+                string msg = $"{user.Username} just left.\nhttps://media.giphy.com/media/2ept7eRuyq98s/giphy.gif";
                 await client.GetGuild(botConfig.GuildID).GetTextChannel(botConfig.GeneralChannelID).SendMessageAsync(msg);
             }
         }
