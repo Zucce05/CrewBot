@@ -33,6 +33,7 @@ namespace CrewBot
         public static ConcurrentDictionary<string, string> triggerResponses = new ConcurrentDictionary<string, string>();
         //public static ConcurrentDictionary<ulong, LoggedMessage> messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
         public static ConcurrentDictionary<ulong, LoggedMessage> messageCache;
+        public static List<ulong> ignoreMessagesCache = new List<ulong>();
 
         // Entry point, immediately run everything async
         public static void Main(/* string[] args */)
@@ -133,9 +134,9 @@ namespace CrewBot
 
         private async void ClearMessageCache(object sender, EventArgs e)
         {
-            foreach(LoggedMessage message in messageCache.Values)
+            foreach (LoggedMessage message in messageCache.Values)
             {
-                if(message.messageDateTimeOffset.AddDays(13).AddHours(23) < DateTime.Now)
+                if (message.messageDateTimeOffset.AddDays(13).AddHours(23) < DateTime.Now)
                 {
                     _ = messageCache.TryRemove(message.messageID, out _);
                     await Log(new LogMessage(LogSeverity.Verbose, $"Program", $"Message cleared from messageCache"));
@@ -145,7 +146,7 @@ namespace CrewBot
 
         private async Task UserJoined(SocketGuildUser user)
         {
-            if(botConfig.GeneralChannelID != 0)
+            if (botConfig.GeneralChannelID != 0)
             {
                 string msg = $"Welcome <@{user.Id}>! Go to <#454538448418766858> to pick a color and unlock channels!\nWe hope you enjoy it here!";
                 await client.GetGuild(botConfig.GuildID).GetTextChannel(botConfig.GeneralChannelID).SendMessageAsync(msg);
@@ -218,15 +219,18 @@ namespace CrewBot
         {
             try
             {
-                LoggedMessage messageToLog = new LoggedMessage(message);
-                if (messageCache.TryAdd(message.Id, messageToLog))
+                if (ignoreMessagesCache != null && !ignoreMessagesCache.Contains(message.Channel.Id))
                 {
-                    _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", "MessageReceived: TryAdd:messageCache success"));
-                    SerializeJsonObject("json/messageCache.json", messageCache);
-                }
-                else
-                {
-                    _ = Log(new LogMessage(LogSeverity.Error, $"Program", "MessageReceived: TryAdd:messageCache failed"));
+                    LoggedMessage messageToLog = new LoggedMessage(message);
+                    if (messageCache.TryAdd(message.Id, messageToLog))
+                    {
+                        _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", "MessageReceived: TryAdd:messageCache success"));
+                        SerializeJsonObject("json/messageCache.json", messageCache);
+                    }
+                    else
+                    {
+                        _ = Log(new LogMessage(LogSeverity.Error, $"Program", "MessageReceived: TryAdd:messageCache failed"));
+                    }
                 }
             }
             catch (Exception e)
@@ -292,7 +296,7 @@ namespace CrewBot
 
             // Unit test for MessageCommandFactory
             // if message startswith +trigger
-                // x is TriggerCommand
+            // x is TriggerCommand
 
 
             if (message.Author.Id == crewGuild.OwnerId)
@@ -414,6 +418,32 @@ namespace CrewBot
             catch (Exception e)
             {
                 Console.WriteLine($"BotConfig->messageCache: Executable Level SetUp Exception:\n\t{e.Message}");
+            }
+
+            try
+            {
+                // This is good for deployment where I've got the config with the executable
+                reader = new JsonTextReader(new StreamReader("json/triggerResponses.json"));
+                triggerResponses = JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(File.ReadAllText("json/triggerResponses.json"));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"BotConfig->triggerResponses: Executable Level SetUp Exception:\n\t{e.Message}");
+            }
+
+            try
+            {
+                // This is good for deployment where I've got the config with the executable
+                reader = new JsonTextReader(new StreamReader("json/ignoreMessageCache.json"));
+                ignoreMessagesCache = JsonConvert.DeserializeObject<List<ulong>>(File.ReadAllText("json/ignoreMessageCache.json"));
+                if (ignoreMessagesCache == null)
+                {
+                    ignoreMessagesCache = new List<ulong>();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"BotConfig->ignoreMessageCache: Executable Level SetUp Exception:\n\t{e.Message}");
             }
         }
 

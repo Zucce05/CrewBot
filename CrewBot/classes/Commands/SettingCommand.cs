@@ -64,6 +64,7 @@ namespace CrewBot.Classes.Commands
                     break;
                 case "color":
                     break;
+                // general is the "general" channel on the server. Used to post 'everyone' messages like user joined/left, etc.
                 case "general":
                     if (msg.Length > 2)
                     {
@@ -81,6 +82,30 @@ namespace CrewBot.Classes.Commands
                                 botConfig.LogChannelID = 0;
                                 SerializeJsonObject($"json/BotConfig.json", botConfig);
                                 await message.Channel.SendMessageAsync($"General Channel has been unset");
+                                break;
+                        }
+                    }
+                    break;
+                // messageLogging is for the logging feature to turn the default delete logging (and others eventually) on and off.
+                // void channels should be ignored. This is a consistency improvement allowing dynamic adding and removing of void channels.
+                // Can be used to ignore other channels as needed (admin/mod/etc?)
+                case "messagelogging":
+                    if (message.MentionedChannels.Count > 0 && msg.Length > 2)
+                    {
+                        switch (msg[2])
+                        {
+                            case "disable":
+                                Program.ignoreMessagesCache.Add(message.MentionedChannels.FirstOrDefault().Id);
+                                SerializeJsonObject($"json/ignoreMessageCache.json", Program.ignoreMessagesCache);
+                                await message.Channel.SendMessageAsync($"Message logging in <#{message.MentionedChannels.FirstOrDefault().Id}> ID:{message.MentionedChannels.FirstOrDefault().Id} is disabled");
+                                break;
+                            case "enable":
+                                if (Program.ignoreMessagesCache.Contains(message.MentionedChannels.FirstOrDefault().Id))
+                                {
+                                    Program.ignoreMessagesCache.Remove(message.MentionedChannels.FirstOrDefault().Id);
+                                    SerializeJsonObject($"json/ignoreMessageCache.json", Program.ignoreMessagesCache);
+                                    await message.Channel.SendMessageAsync($"Message logging in #<{message.MentionedChannels.FirstOrDefault().Id}> ID:{message.MentionedChannels.FirstOrDefault().Id} is enabled");
+                                }
                                 break;
                         }
                     }
@@ -106,7 +131,14 @@ namespace CrewBot.Classes.Commands
 
         private string HelpMessage(string prefix)
         {
-            string returnString = $"There is no help message created here yet. Let Zucce know.";
+            string returnString = $"Owner only comamnds:";
+            returnString += "\n - admin\n -- add\n -- remove\n --- adds or removes a role to be given 'admin' on the server with or without administrator permissions";
+            returnString += "\nAdmin only commands:";
+            returnString += "\n - logchannel\n -- set\n -- unset\n --- Sets or unsets the primary logging channel";
+            returnString += "\n - general\n -- set\n -- unset\n --- Sets or unsets the server's general channel";
+            returnString += "\n - messagelogging\n -- enable\n -- disable\n --- Requires a mentioned channel - sets mentioned channel to have message logging enabled or disabled";
+            returnString += "\nEveryone commands:";
+            returnString += "\n - help:\n -- Shows this help command (more to follow)";
             return returnString;
         }
     }
