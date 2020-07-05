@@ -32,7 +32,7 @@ namespace CrewBot
         //public static List<SocketRole> colorRoles = new List<SocketRole>();
         public static ConcurrentDictionary<string, string> triggerResponses = new ConcurrentDictionary<string, string>();
         //public static ConcurrentDictionary<ulong, LoggedMessage> messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
-        public static ConcurrentDictionary<ulong, LoggedMessage> messageCache;
+        public static ConcurrentDictionary<ulong, LoggedMessage> messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
         public static List<ulong> ignoreMessagesCache = new List<ulong>();
 
         // Entry point, immediately run everything async
@@ -66,7 +66,7 @@ namespace CrewBot
             };
 
             // Populate the configuration from the BotConfig.json file for the client to use when connecting
-            BotConfigurationAsync(ref botConfig);
+            BotStartup.Startup(ref botConfig, ref colorChoices, ref triggerResponses, ref messageCache, ref ignoreMessagesCache);
 
             // Create event handlers and start the bot
             // discord.net handled event handlers
@@ -369,81 +369,6 @@ namespace CrewBot
             catch (System.OperationCanceledException exception)
             {
                 _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"{exception.Message}"));
-            }
-        }
-
-        public static void BotConfigurationAsync(ref BotConfig bc)
-        {
-            JsonTextReader reader;
-            try
-            {
-                // This is good for deployment where I've got the config with the executable
-                reader = new JsonTextReader(new StreamReader("json/BotConfig.json"));
-                bc = JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText("json/BotConfig.json"));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"BotConfig->BotConfig: Executable Level SetUp Exception:\n\t{e.Message}");
-            }
-
-            try
-            {
-                // This is good for deployment where I've got the config with the executable
-                reader = new JsonTextReader(new StreamReader("json/ColorChoices.json"));
-                colorChoices = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, string>>(File.ReadAllText("json/ColorChoices.json"));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"BotConfig->ColorChoices: Executable Level SetUp Exception:\n\t{e.Message}");
-            }
-
-            try
-            {
-                // This is good for deployment where I've got the config with the executable
-                reader = new JsonTextReader(new StreamReader("json/triggerResponses.json"));
-                triggerResponses = JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(File.ReadAllText("json/triggerResponses.json"));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"BotConfig->triggerResponses: Executable Level SetUp Exception:\n\t{e.Message}");
-            }
-
-            try
-            {
-                // This is good for deployment where I've got the config with the executable
-                messageCache = new ConcurrentDictionary<ulong, LoggedMessage>();
-                reader = new JsonTextReader(new StreamReader("json/messageCache.json"));
-                messageCache = JsonConvert.DeserializeObject<ConcurrentDictionary<ulong, LoggedMessage>>(File.ReadAllText("json/messageCache.json"));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"BotConfig->messageCache: Executable Level SetUp Exception:\n\t{e.Message}");
-            }
-
-            try
-            {
-                // This is good for deployment where I've got the config with the executable
-                reader = new JsonTextReader(new StreamReader("json/triggerResponses.json"));
-                triggerResponses = JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(File.ReadAllText("json/triggerResponses.json"));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"BotConfig->triggerResponses: Executable Level SetUp Exception:\n\t{e.Message}");
-            }
-
-            try
-            {
-                // This is good for deployment where I've got the config with the executable
-                reader = new JsonTextReader(new StreamReader("json/ignoreMessageCache.json"));
-                ignoreMessagesCache = JsonConvert.DeserializeObject<List<ulong>>(File.ReadAllText("json/ignoreMessageCache.json"));
-                if (ignoreMessagesCache == null)
-                {
-                    ignoreMessagesCache = new List<ulong>();
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"BotConfig->ignoreMessageCache: Executable Level SetUp Exception:\n\t{e.Message}");
             }
         }
 
