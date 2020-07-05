@@ -1,0 +1,105 @@
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Connecting ApiClient
+------------------
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Received Hello
+------------------
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Heartbeat Started
+------------------
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Identifying
+------------------
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Sent Heartbeat
+------------------
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Sent Identify
+------------------
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Received HeartbeatAck
+------------------
+:: 5/17/2020 11:23:51 ::
+11:23:51 Gateway     Latency = 156 ms
+------------------
+:: 5/17/2020 11:23:52 ::
+11:23:52 Gateway     Received Dispatch (READY)
+------------------
+:: 5/17/2020 11:23:52 ::
+11:23:52 Gateway     GuildDownloader Started
+------------------
+:: 5/17/2020 11:23:52 ::
+11:23:52 Gateway     Sending Status
+------------------
+:: 5/17/2020 11:23:52 ::
+11:23:52 Gateway     Sent StatusUpdate
+------------------
+:: 5/17/2020 11:23:52 ::
+11:23:52 Gateway     Raising Event
+------------------
+:: 5/17/2020 11:23:52 ::
+11:23:52 Gateway     Received Dispatch (GUILD_AVAILABLE)
+------------------
+:: 5/17/2020 11:23:52 ::
+11:23:52 Gateway     GuildDownloader Stopped
+------------------
+:: 5/17/2020 11:23:55 ::
+11:23:55 Gateway     Received Dispatch (MESSAGE_CREATE)
+------------------
+:: 5/17/2020 11:23:55 ::
+11:23:55 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:23:56 ::
+11:23:56 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:23:58 ::
+11:23:58 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:24:07 ::
+11:24:07 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:24:17 ::
+11:24:17 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:24:23 ::
+11:24:23 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:24:33 ::
+11:24:33 Gateway     Sent Heartbeat
+------------------
+:: 5/17/2020 11:24:33 ::
+11:24:33 Gateway     Received HeartbeatAck
+------------------
+:: 5/17/2020 11:24:33 ::
+11:24:33 Gateway     Latency = 63 ms
+------------------
+:: 5/17/2020 11:24:37 ::
+11:24:37 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:24:51 ::
+11:24:51 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:24:57 ::
+11:24:57 Gateway     Received Dispatch (GUILD_MEMBER_UPDATE)
+------------------
+:: 5/17/2020 11:25:09 ::
+11:25:09 Gateway     Received Dispatch (GUILD_MEMBER_UPDATE)
+------------------
+:: 5/17/2020 11:25:10 ::
+11:25:10 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:25:14 ::
+11:25:14 Gateway     Sent Heartbeat
+------------------
+:: 5/17/2020 11:25:14 ::
+11:25:14 Gateway     Received HeartbeatAck
+------------------
+:: 5/17/2020 11:25:14 ::
+11:25:14 Gateway     Latency = 78 ms
+------------------
+:: 5/17/2020 11:25:16 ::
+11:25:16 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
+:: 5/17/2020 11:25:23 ::
+11:25:23 Gateway     Received Dispatch (PRESENCE_UPDATE)
+------------------
