@@ -3,6 +3,7 @@ using CrewBot.Classes.Commands;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System;
+using Discord;
 
 namespace CrewBot.Classes.FactoryClasses
 {
@@ -14,7 +15,19 @@ namespace CrewBot.Classes.FactoryClasses
             ConcurrentDictionary<string, string> triggerResponses,
             ConcurrentDictionary<ulong, string> colorChoices)
         {
-            bool serverOwner = message.Author.Id == guild.Owner.Id;
+            bool serverOwner;
+            try
+            {
+                serverOwner = message.Author.Id == guild.Owner.Id;
+            }
+            catch (System.NullReferenceException e)
+            {
+                _ = Program.Log(new LogMessage(LogSeverity.Error, $"MessageCommandFactory", $"{e.Message}"));
+            }
+            finally
+            {
+                serverOwner = false;
+            }
             bool AdminAuthor = false;
             bool triggerAdded = false;
             try

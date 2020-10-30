@@ -62,7 +62,7 @@ namespace CrewBot
             // No content over 14 days may be cached - Check hourly for content exending past 14 days within the next hour
             messageDeleteTimer = new Timer
             {
-                Interval = 3600000
+                Interval = 3600
             };
 
             // Populate the configuration from the BotConfig.json file for the client to use when connecting
@@ -351,10 +351,17 @@ namespace CrewBot
 
                     _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"ColorChangeSelection"));
                     UpdateCrewGuildObject(botConfig);
-                    Random rand = new Random();
-                    SocketGuildUser user = crewGuild.GetRole(botConfig.ColorRoleID).Members.ElementAt(rand.Next(crewGuild.GetRole(botConfig.ColorRoleID).Members.Count()));
-                    await user.RemoveRolesAsync(colorRoles);
-                    await user.AddRoleAsync(crewGuild.GetRole(colorChoices.ElementAt(rand.Next(colorChoices.Count)).Key));
+                    try
+                    {
+                        Random rand = new Random();
+                        SocketGuildUser user = crewGuild.GetRole(botConfig.ColorRoleID).Members.ElementAt(rand.Next(crewGuild.GetRole(botConfig.ColorRoleID).Members.Count()));
+                        await user.RemoveRolesAsync(colorRoles);
+                        await user.AddRoleAsync(crewGuild.GetRole(colorChoices.ElementAt(rand.Next(colorChoices.Count)).Key));
+                    }
+                    catch (Exception exception)
+                    {
+                        _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"{exception.Message}"));
+                    }
 
                 }
             }
