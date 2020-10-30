@@ -102,5 +102,6 @@ namespace CrewBot.Classes
                 Console.WriteLine($"BotConfig->ignoreMessageCache: Executable Level SetUp Exception:\n\t{e.Message}");
             }
         }
+
     }
 }
