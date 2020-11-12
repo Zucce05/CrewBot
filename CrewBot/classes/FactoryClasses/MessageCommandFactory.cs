@@ -18,7 +18,7 @@ namespace CrewBot.Classes.FactoryClasses
             bool serverOwner;
             try
             {
-                serverOwner = message.Author.Id == guild.Owner.Id;
+                serverOwner = message.Author.Id == guild.OwnerId;
             }
             catch (System.NullReferenceException e)
             {
