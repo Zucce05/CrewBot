@@ -131,7 +131,7 @@ namespace CrewBot
             // Wait for events to happen
             await Task.Delay(-1);
         }
-
+        
         private async void ClearMessageCache(object sender, EventArgs e)
         {
             foreach (LoggedMessage message in messageCache.Values)
@@ -215,7 +215,7 @@ namespace CrewBot
             crewGuild = client.GetGuild(bc.GuildID);
         }
 
-        private async Task MessageReceived(SocketMessage message)
+        private async Task AddMessageToLog(SocketMessage message)
         {
             try
             {
@@ -237,8 +237,10 @@ namespace CrewBot
             {
                 _ = Log(new LogMessage(LogSeverity.Error, $"Program", $"MessageReceived: TryAdd:messageCache Error: {e.Message}"));
             }
+        }
 
-            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageReceived"));
+        private async Task BotDMMessageReceived(SocketMessage message)
+        {
             if (message.Channel is IDMChannel && message.Author.MutualGuilds.Count > 0 && botConfig.DMChannelID > 0)
             {
                 EmbedBuilder builder = new EmbedBuilder()
@@ -249,6 +251,15 @@ namespace CrewBot
                 };
                 await crewGuild.GetTextChannel(botConfig.DMChannelID).SendMessageAsync(String.Empty, false, builder.Build());
             }
+        }
+
+        private async Task MessageReceived(SocketMessage message)
+        {
+            _ = Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageReceived"));
+
+            await AddMessageToLog(message);
+
+            await BotDMMessageReceived(message);
 
             if (message.MentionedUsers.Count > 0)
             {
