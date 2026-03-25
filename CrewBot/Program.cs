@@ -116,7 +116,6 @@ namespace CrewBot
             await ApplyRuntimeConfigAsync(botConfig, forceReconnect: false);
             await Task.Delay(-1);
         }
-
         private async void RefreshRuntimeConfig(object sender, ElapsedEventArgs e)
         {
             await ApplyRuntimeConfigAsync(BotStartup.LoadConfig(), forceReconnect: false);
@@ -487,7 +486,7 @@ namespace CrewBot
             await logChannel.SendMessageAsync(string.Empty, false, builder.Build());
         }
 
-        private async Task MessageReceived(SocketMessage message)
+        private async Task AddMessageToLog(SocketMessage message)
         {
             _ = Log(new LogMessage(LogSeverity.Verbose, "Program", "MessageReceived"));
             _ = LogMessageDiagnosticsAsync(message);
@@ -552,6 +551,11 @@ namespace CrewBot
             {
                 await Log(new LogMessage(LogSeverity.Error, "MessageCommand", e.Message));
             }
+        }
+
+        private async Task MessageReceived(SocketMessage message)
+        {
+            await AddMessageToLog(message);
         }
 
         private async Task<(bool CacheAdded, bool VoidQueued)> ObservePassiveMessageAsync(IMessage message, bool isReplay)
