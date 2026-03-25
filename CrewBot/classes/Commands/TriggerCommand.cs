@@ -1,9 +1,7 @@
 ﻿using CrewBot.Classes.Abstract;
 using Discord;
 using Discord.WebSocket;
-using Newtonsoft.Json;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace CrewBot.Classes.Commands
@@ -19,134 +17,140 @@ namespace CrewBot.Classes.Commands
             // if not startswih token and COMMAND STRING log error and quit
             // What's next?  add? do add, remove? do remove, etc.
             string[] msg = message.Content.ToLower().Split(new string[] { " " }, System.StringSplitOptions.RemoveEmptyEntries);
-            if (msg.Length > 1)
+            if (msg.Length < 2)
             {
-                if (owner)
-                {
-                    switch (msg[1])
-                    {
-                        case "admin":
-                            if (msg.Length > 2)
-                            {
-                                switch (msg[2])
-                                {
-                                    case "enable":
-                                        botConfig.TriggerAdminEnabled = true;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now enabled");
-                                        break;
-                                    case "disable":
-                                        botConfig.TriggerAdminEnabled = false;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now disabled");
-                                        break;
-                                    case "toggle":
-                                        botConfig.TriggerAdminEnabled = !botConfig.TriggerAdminEnabled;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        if (botConfig.TriggerAdminEnabled)
-                                        {
-                                            await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now enabled");
-                                        }
-                                        else
-                                        {
-                                            await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now disabled");
-                                        }
-                                        break;
-                                }
-                            }
-                        break;
-                    }
-                }
+                return;
+            }
 
-                if (botConfig.TriggerEnabled || owner)
+            if (owner && msg[1] == "admin")
+            {
+                if (msg.Length > 2)
                 {
-                    switch (msg[1])
+                    switch (msg[2])
                     {
-                        case "module":
-                            if (msg.Length > 2)
+                        case "enable":
+                            botConfig.TriggerAdminEnabled = true;
+                            BotStartup.SaveConfig(botConfig);
+                            await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now enabled");
+                            break;
+                        case "disable":
+                            botConfig.TriggerAdminEnabled = false;
+                            BotStartup.SaveConfig(botConfig);
+                            await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now disabled");
+                            break;
+                        case "toggle":
+                            botConfig.TriggerAdminEnabled = !botConfig.TriggerAdminEnabled;
+                            BotStartup.SaveConfig(botConfig);
+                            if (botConfig.TriggerAdminEnabled)
                             {
-                                switch (msg[2])
-                                {
-                                    case "enable":
-                                        botConfig.TriggerEnabled = true;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Module ``trigger`` is now enabled");
-                                        break;
-                                    case "disable":
-                                        botConfig.TriggerEnabled = false;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Module ``trigger`` is now disabled");
-                                        break;
-                                    case "toggle":
-                                        botConfig.TriggerEnabled = !botConfig.TriggerEnabled;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        if (botConfig.TriggerEnabled)
-                                        {
-                                            await message.Channel.SendMessageAsync($"Module ``trigger`` is now enabled");
-                                        }
-                                        else
-                                        {
-                                            await message.Channel.SendMessageAsync($"Module ``trigger`` is now disabled");
-                                        }
-                                        break;
-                                }
+                                await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now enabled");
+                            }
+                            else
+                            {
+                                await message.Channel.SendMessageAsync($"Administrator use for trigger commands is now disabled");
                             }
                             break;
                     }
                 }
 
-                if (botConfig.TriggerEnabled)
+                return;
+            }
+
+            if (botConfig.TriggerEnabled || owner)
+            {
+                if (msg[1] == "module")
                 {
-                    switch (msg[1])
+                    if (msg.Length > 2)
                     {
-                        case "add":
-                            string[] substring = message.Content.Split("~");
-                            if (substring.Length > 1)
-                            {
-                                if (triggerResponses.TryAdd(substring[1].Trim().ToLower(), substring[2].Trim()))
+                        switch (msg[2])
+                        {
+                            case "enable":
+                                botConfig.TriggerEnabled = true;
+                                BotStartup.SaveConfig(botConfig);
+                                await message.Channel.SendMessageAsync($"Module ``trigger`` is now enabled");
+                                break;
+                            case "disable":
+                                botConfig.TriggerEnabled = false;
+                                BotStartup.SaveConfig(botConfig);
+                                await message.Channel.SendMessageAsync($"Module ``trigger`` is now disabled");
+                                break;
+                            case "toggle":
+                                botConfig.TriggerEnabled = !botConfig.TriggerEnabled;
+                                BotStartup.SaveConfig(botConfig);
+                                if (botConfig.TriggerEnabled)
                                 {
-                                    SerializeJsonObject($"json/triggerResponses.json", triggerResponses);
-                                    await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} response {substring[2].Trim().ToLower()} added.");
+                                    await message.Channel.SendMessageAsync($"Module ``trigger`` is now enabled");
                                 }
                                 else
                                 {
-                                    await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} failed to be added.\n" +
-                                        $"Use this format to add a triggerword ``+addtrigger -<keyword> -<desired response>``");
+                                    await message.Channel.SendMessageAsync($"Module ``trigger`` is now disabled");
                                 }
-                            }
-                            break;
-                        case "remove":
-                            string[] sub = message.Content.Split("~");
-                            {
-                                if (sub.Length > 1)
-                                {
-                                    if (triggerResponses.TryRemove(sub[1].Trim().ToLower(), out string value))
-                                    {
-                                        await message.Channel.SendMessageAsync($"triggerword: ``{sub[1].Trim().ToLower()}`` resulting in: ``{value}`` was removed");
-                                        SerializeJsonObject($"json/triggerResponses.json", triggerResponses);
-                                    }
-                                    else
-                                    {
-                                        await message.Channel.SendMessageAsync($"{sub[1]} was **not** a triggerword or was not removed");
-                                    }
-                                }
-                            }
-                            break;
-                        default:
-                            await UserAction(message, triggerResponses, prefix);
-                            break;
+                                break;
+                        }
                     }
+
+                    return;
                 }
-                else
+
+                switch (msg[1])
                 {
-                    await message.Channel.SendMessageAsync($"This module (``trigger``) is disabled");
+                    case "add":
+                        string[] substring = message.Content.Split("~");
+                        if (substring.Length > 2)
+                        {
+                            if (triggerResponses.TryAdd(substring[1].Trim().ToLower(), substring[2].Trim()))
+                            {
+                                SerializeJsonObject(BotStartup.TriggerResponsesPath, triggerResponses);
+                                await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} response {substring[2].Trim().ToLower()} added.");
+                            }
+                            else
+                            {
+                                await message.Channel.SendMessageAsync($"triggerword {substring[1].Trim().ToLower()} failed to be added.\n" +
+                                    $"Use this format to add a triggerword ``{prefix}trigger add ~<keyword> ~<desired response>``");
+                            }
+                        }
+                        else
+                        {
+                            await message.Channel.SendMessageAsync($"Use this format to add a triggerword ``{prefix}trigger add ~<keyword> ~<desired response>``");
+                        }
+
+                        return;
+                    case "remove":
+                        string[] sub = message.Content.Split("~");
+                        if (sub.Length > 1)
+                        {
+                            if (triggerResponses.TryRemove(sub[1].Trim().ToLower(), out string value))
+                            {
+                                await message.Channel.SendMessageAsync($"triggerword: ``{sub[1].Trim().ToLower()}`` resulting in: ``{value}`` was removed");
+                                SerializeJsonObject(BotStartup.TriggerResponsesPath, triggerResponses);
+                            }
+                            else
+                            {
+                                await message.Channel.SendMessageAsync($"{sub[1]} was **not** a triggerword or was not removed");
+                            }
+                        }
+
+                        return;
                 }
+            }
+
+            if (botConfig.TriggerEnabled)
+            {
+                await UserAction(message, triggerResponses, prefix);
+            }
+            else
+            {
+                await message.Channel.SendMessageAsync($"This module (``trigger``) is disabled");
             }
         }
 
         public async Task UserAction(SocketMessage message, ConcurrentDictionary<string, string> triggerResponses, string prefix)
         {
             string[] msg = message.Content.ToLower().Split(new string[] { " " }, System.StringSplitOptions.RemoveEmptyEntries);
+            if (msg.Length < 2)
+            {
+                return;
+            }
             switch (msg[1])
             {
                 case "list":

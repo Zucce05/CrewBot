@@ -1,5 +1,6 @@
-﻿using Discord;
+using Discord;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -7,194 +8,114 @@ namespace CrewBot.Classes
 {
     public class Logging
     {
-        private readonly object CriticalLogLock = new object();
-        private readonly object ErrorLogLock = new object();
-        private readonly object WarningLogLock = new object();
-        private readonly object InfoLogLock = new object();
-        private readonly object VerboseLogLock = new object();
-        private readonly object DebugLogLock = new object();
+        private static readonly IReadOnlyDictionary<LogSeverity, string> LogFileNames = new Dictionary<LogSeverity, string>
+        {
+            { LogSeverity.Critical, "CriticalLog.txt" },
+            { LogSeverity.Error, "ErrorLog.txt" },
+            { LogSeverity.Warning, "WarningLog.txt" },
+            { LogSeverity.Info, "InfoLog.txt" },
+            { LogSeverity.Verbose, "VerboseLog.txt" },
+            { LogSeverity.Debug, "DebugLog.txt" }
+        };
+
+        private readonly Dictionary<LogSeverity, object> logLocks = new Dictionary<LogSeverity, object>
+        {
+            { LogSeverity.Critical, new object() },
+            { LogSeverity.Error, new object() },
+            { LogSeverity.Warning, new object() },
+            { LogSeverity.Info, new object() },
+            { LogSeverity.Verbose, new object() },
+            { LogSeverity.Debug, new object() }
+        };
 
         public Logging()
         {
-            if (!File.Exists("CriticalLog.txt"))
+            foreach (string fileName in LogFileNames.Values)
             {
-                using (FileStream fs = File.Create("CriticalLog.txt"))
-                {
-                    fs.Close();
-                }
-            }
-            if (!File.Exists("ErrorLog.txt"))
-            {
-                using (FileStream fs = File.Create("ErrorLog.txt"))
-                {
-                    fs.Close();
-                }
-            }
-            if (!File.Exists("WarningLog.txt"))
-            {
-                using (FileStream fs = File.Create("WarningLog.txt"))
-                {
-                    fs.Close();
-                }
-            }
-            if (!File.Exists("InfoLog.txt"))
-            {
-                using (FileStream fs = File.Create("InfoLog.txt"))
-                {
-                    fs.Close();
-                }
-            }
-            if (!File.Exists("VerboseLog.txt"))
-            {
-                using (FileStream fs = File.Create("VerboseLog.txt"))
-                {
-                    fs.Close();
-                }
-            }
-            if (!File.Exists("DebugLog.txt"))
-            {
-                using (FileStream fs = File.Create("DebugLog.txt"))
-                {
-                    fs.Close();
-                }
+                EnsureLogFileExists(Path.Combine(BotStartup.LogsDirectoryPath, fileName));
             }
         }
 
         public Task Log(LogMessage msg)
         {
-            switch (msg.Severity)
+            if (!logLocks.TryGetValue(msg.Severity, out object fileLock))
             {
-                case LogSeverity.Critical:
-                    lock (CriticalLogLock)
-                    {
-                        try
-                        {
-                            StreamWriter CriticalLogWriter = File.AppendText("CriticalLog.txt");
-                            CriticalLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
-                            CriticalLogWriter.WriteLine($"{msg}");
-                            CriticalLogWriter.WriteLine($"------------------");
-                            CriticalLogWriter.Close();
-                        }
-                        catch (System.InvalidOperationException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                        catch (System.IO.IOException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                    }
-                    break;
-                case LogSeverity.Error:
-                    lock (ErrorLogLock)
-                    {
-                        try
-                        {
-                            StreamWriter ErrorLogWriter = File.AppendText("ErrorLog.txt");
-                            ErrorLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
-                            ErrorLogWriter.WriteLine($"{msg}");
-                            ErrorLogWriter.WriteLine($"------------------");
-                            ErrorLogWriter.Close();
-                        }
-                        catch (System.InvalidOperationException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                        catch (System.IO.IOException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                    }
-                    break;
-                case LogSeverity.Warning:
-                    lock (WarningLogLock)
-                    {
-                        try
-                        {
-                            StreamWriter WarningLogWriter = File.AppendText("WarningLog.txt");
-                            WarningLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
-                            WarningLogWriter.WriteLineAsync($"{msg}");
-                            WarningLogWriter.WriteLineAsync($"------------------");
-                            WarningLogWriter.Close();
-                        }
-                        catch (System.InvalidOperationException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                        catch (System.IO.IOException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                    }
-                    break;
-                case LogSeverity.Info:
-                    lock (InfoLogLock)
-                    {
-                        try
-                        {
-                            StreamWriter InfoLogWriter = File.AppendText("InfoLog.txt");
-                            InfoLogWriter.WriteLine($":: {DateTime.Now.ToString()} ::");
-                            InfoLogWriter.WriteLine($"{msg}");
-                            InfoLogWriter.WriteLine($"------------------");
-                            InfoLogWriter.Close();
-                        }
-                        catch (System.InvalidOperationException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                        catch (System.IO.IOException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                    }
-                    break;
-                case LogSeverity.Verbose:
-                    lock (VerboseLogLock)
-                    {
-                        try
-                        {
-                            StreamWriter VerboseLogWriter = File.AppendText("VerboseLog.txt");
-                            VerboseLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
-                            VerboseLogWriter.WriteLineAsync($"{msg}");
-                            VerboseLogWriter.WriteLineAsync($"------------------");
-                            VerboseLogWriter.Close();
-                        }
-                        catch (System.InvalidOperationException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                        catch (System.IO.IOException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                    }
-                    break;
-                case LogSeverity.Debug:
-                    lock (DebugLogLock)
-                    {
-                        try
-                        {
-                            StreamWriter DebugLogWriter = File.AppendText("DebugLog.txt");
-                            DebugLogWriter.WriteLineAsync($":: {DateTime.Now.ToString()} ::");
-                            DebugLogWriter.WriteLineAsync($"{msg}");
-                            DebugLogWriter.WriteLineAsync($"------------------");
-                            DebugLogWriter.Close();
-                        }
-                        catch (System.InvalidOperationException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                        catch (System.IO.IOException exception)
-                        {
-                            _ = Log(new LogMessage(LogSeverity.Error, $"Logging", $"{exception.Message}"));
-                        }
-                    }
-                    break;
-                default:
-                    // TODO: Add some sort of error message if this is hit.
-                    break;
+                return Task.CompletedTask;
             }
+
+            string path = GetLogPath(msg.Severity);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return Task.CompletedTask;
+            }
+
+            lock (fileLock)
+            {
+                try
+                {
+                    Directory.CreateDirectory(BotStartup.LogsDirectoryPath);
+                    using (StreamWriter writer = File.AppendText(path))
+                    {
+                        writer.WriteLine($":: {DateTime.Now} ::");
+                        writer.WriteLine($"{msg}");
+                        writer.WriteLine("------------------");
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    Console.Error.WriteLine($"Logging failure writing {path}");
+                }
+                catch (IOException)
+                {
+                    Console.Error.WriteLine($"Logging IO failure writing {path}");
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    Console.Error.WriteLine($"Logging access failure writing {path}");
+                }
+            }
+
             return Task.CompletedTask;
+        }
+
+        private static void EnsureLogFileExists(string path)
+        {
+            try
+            {
+                string directory = Path.GetDirectoryName(path);
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                if (File.Exists(path))
+                {
+                    return;
+                }
+
+                using (FileStream fs = File.Create(path))
+                {
+                    fs.Close();
+                }
+            }
+            catch (IOException)
+            {
+                Console.Error.WriteLine($"Logging IO failure creating {path}");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.Error.WriteLine($"Logging access failure creating {path}");
+            }
+        }
+
+        private static string GetLogPath(LogSeverity severity)
+        {
+            if (!LogFileNames.TryGetValue(severity, out string fileName))
+            {
+                return string.Empty;
+            }
+
+            return Path.Combine(BotStartup.LogsDirectoryPath, fileName);
         }
     }
 }

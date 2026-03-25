@@ -2,11 +2,22 @@
 // Change the name of this fily to BotConfig.json
 // Put your discord application token in place of the "put your token in here" message
 {
-  "token": "Put your token in here",
+  "BotEnabled": true,
+  "Token": "Put your token in here",
   "GuildID": 0,
   "LogChannelID": 0,
   "DMChannelID": 0,
   "BotID": 0,
+  "AdminID": 0,
+  "AdditionalOwnerID": 0,
+  "GeneralChannelID": 0,
+  "ColorChannelID": 0,
+  "Prefix": "+",
+  "ColorTimerSeconds": 100,
   "ColorRoleID": 0,
-  "AdminID": null
+  "ColorEnabled": false,
+  "ColorAdminEnabled": false,
+  "TriggerEnabled": false,
+  "TriggerAdminEnabled": false,
+  "SettingsAdminEnabled": false
 }

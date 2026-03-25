@@ -1,14 +1,13 @@
-﻿using Discord.WebSocket;
+using Discord;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CrewBot.Classes
 {
     public class LoggedMessage
     {
         public LoggedMessage() { }
-        public LoggedMessage(SocketMessage message)
+
+        public LoggedMessage(IMessage message)
         {
             userID = message.Author.Id;
             messageID = message.Id;

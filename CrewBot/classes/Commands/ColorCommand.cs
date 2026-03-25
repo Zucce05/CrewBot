@@ -13,135 +13,153 @@ namespace CrewBot.Classes.Commands
         public async Task AdminAction(SocketMessage message, ConcurrentDictionary<ulong, string> colorChoices, string prefix, BotConfig botConfig, bool owner)
         {
             string[] msg = message.Content.ToLower().Split(new string[] { " " }, System.StringSplitOptions.RemoveEmptyEntries);
-            if (msg.Length > 1)
+            if (msg.Length < 2)
             {
-                if (owner)
+                return;
+            }
+
+            if (owner && msg[1] == "admin")
+            {
+                if (msg.Length > 2)
                 {
-                    switch (msg[1])
+                    switch (msg[2])
                     {
-                        case "admin":
-                            if (msg.Length > 2)
+                        case "enable":
+                            botConfig.ColorAdminEnabled = true;
+                            BotStartup.SaveConfig(botConfig);
+                            await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now enabled");
+                            break;
+                        case "disable":
+                            botConfig.ColorAdminEnabled = false;
+                            BotStartup.SaveConfig(botConfig);
+                            await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now disabled");
+                            break;
+                        case "toggle":
+                            botConfig.ColorAdminEnabled = !botConfig.ColorAdminEnabled;
+                            BotStartup.SaveConfig(botConfig);
+                            if (botConfig.ColorAdminEnabled)
                             {
-                                switch (msg[2])
-                                {
-                                    case "enable":
-                                        botConfig.ColorAdminEnabled = true;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now enabled");
-                                        break;
-                                    case "disable":
-                                        botConfig.ColorAdminEnabled = false;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now disabled");
-                                        break;
-                                    case "toggle":
-                                        botConfig.ColorAdminEnabled = !botConfig.ColorAdminEnabled;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        if (botConfig.ColorAdminEnabled)
-                                        {
-                                            await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now enabled");
-                                        }
-                                        else
-                                        {
-                                            await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now disabled");
-                                        }
-                                        break;
-                                }
+                                await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now enabled");
+                            }
+                            else
+                            {
+                                await message.Channel.SendMessageAsync($"Administrator use for ``color`` commands is now disabled");
                             }
                             break;
                     }
                 }
 
-                if (botConfig.ColorAdminEnabled || owner)
+                return;
+            }
+
+            if (botConfig.ColorAdminEnabled || owner)
+            {
+                if (msg[1] == "module")
                 {
-                    switch (msg[1])
+                    if (msg.Length > 2)
                     {
-                        case "module":
-                            if (msg.Length > 2)
-                            {
-                                switch (msg[2])
+                        switch (msg[2])
+                        {
+                            case "enable":
+                                botConfig.ColorEnabled = true;
+                                BotStartup.SaveConfig(botConfig);
+                                await message.Channel.SendMessageAsync($"Module ``color`` is now enabled");
+                                break;
+                            case "disable":
+                                botConfig.ColorEnabled = false;
+                                BotStartup.SaveConfig(botConfig);
+                                await message.Channel.SendMessageAsync($"Module ``color`` is now disabled");
+                                break;
+                            case "toggle":
+                                botConfig.ColorEnabled = !botConfig.ColorEnabled;
+                                BotStartup.SaveConfig(botConfig);
+                                if (botConfig.ColorEnabled)
                                 {
-                                    case "enable":
-                                        botConfig.ColorEnabled = true;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Module ``color`` is now enabled");
-                                        break;
-                                    case "disable":
-                                        botConfig.ColorEnabled = false;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        await message.Channel.SendMessageAsync($"Module ``color`` is now disabled");
-                                        break;
-                                    case "toggle":
-                                        botConfig.ColorEnabled = !botConfig.ColorEnabled;
-                                        SerializeJsonObject($"json/BotConfig.json", botConfig);
-                                        if (botConfig.ColorEnabled)
-                                        {
-                                            await message.Channel.SendMessageAsync($"Module ``color`` is now enabled");
-                                        }
-                                        else
-                                        {
-                                            await message.Channel.SendMessageAsync($"Module ``color`` is now disabled");
-                                        }
-                                        break;
+                                    await message.Channel.SendMessageAsync($"Module ``color`` is now enabled");
                                 }
-                            }
-                            break;
+                                else
+                                {
+                                    await message.Channel.SendMessageAsync($"Module ``color`` is now disabled");
+                                }
+                                break;
+                        }
                     }
+
+                    return;
                 }
-                if (botConfig.ColorEnabled)
+
+                switch (msg[1])
                 {
-                    switch (msg[1])
-                    {
-                        case "add":
-                            _ = Program.Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +addcolors"));
-                            foreach (var color in message.MentionedRoles)
-                            {
-                                colorChoices.TryAdd(color.Id, color.Name);
-                                //colorRoles.Add(color);
-                            }
-                            await message.Channel.SendMessageAsync($"Color ``{message.MentionedRoles.FirstOrDefault().Name}`` added");
-                            SerializeJsonObject($"json/ColorChoices.json", colorChoices);
-                            break;
-                        case "remove":
-                            _ = Program.Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +removecolors"));
-                            foreach (var color in message.MentionedRoles)
-                            {
-                                colorChoices.TryRemove(color.Id, out string value);
-                                //colorRoles.Remove(color);
-                            }
-                            await message.Channel.SendMessageAsync($"Color ``{message.MentionedRoles.FirstOrDefault().Name}`` removed");
-                            SerializeJsonObject($"json/ColorChoices.json", colorChoices);
-                            break;
-                        case "set":
-                            if (message.MentionedRoles.Count == 1)
-                            {
-                                botConfig.ColorRoleID = message.MentionedRoles.FirstOrDefault().Id;
-                                SerializeJsonObject($"json/BotConfig.json", botConfig);
-                            }
-                            else
-                            {
-                                await message.Channel.SendMessageAsync($"You must mention exactly one role for this command\nExample: ``{prefix}color set @chameleon``");
-                            }
-                            break;
-                        case "unset":
-                            botConfig.ColorRoleID = 0;
-                            SerializeJsonObject($"json/BotConfig.json", botConfig);
-                            break;
-                        default:
-                            await UserAction(message, colorChoices, prefix);
-                            break;
-                    }
+                    case "add":
+                        if (message.MentionedRoles.Count == 0)
+                        {
+                            await message.Channel.SendMessageAsync($"You must mention at least one role for this command\nExample: ``{prefix}color add @red``");
+                            return;
+                        }
+
+                        _ = Program.Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +addcolors"));
+                        foreach (var color in message.MentionedRoles)
+                        {
+                            colorChoices.TryAdd(color.Id, color.Name);
+                        }
+
+                        SerializeJsonObject(BotStartup.ColorChoicesPath, colorChoices);
+                        await message.Channel.SendMessageAsync($"Color ``{message.MentionedRoles.FirstOrDefault().Name}`` added");
+                        return;
+                    case "remove":
+                        if (message.MentionedRoles.Count == 0)
+                        {
+                            await message.Channel.SendMessageAsync($"You must mention at least one role for this command\nExample: ``{prefix}color remove @red``");
+                            return;
+                        }
+
+                        _ = Program.Log(new LogMessage(LogSeverity.Verbose, $"Program", $"MessageRecieved :: +removecolors"));
+                        foreach (var color in message.MentionedRoles)
+                        {
+                            colorChoices.TryRemove(color.Id, out string value);
+                        }
+
+                        SerializeJsonObject(BotStartup.ColorChoicesPath, colorChoices);
+                        await message.Channel.SendMessageAsync($"Color ``{message.MentionedRoles.FirstOrDefault().Name}`` removed");
+                        return;
+                    case "set":
+                        if (message.MentionedRoles.Count == 1)
+                        {
+                            botConfig.ColorRoleID = message.MentionedRoles.FirstOrDefault().Id;
+                            BotStartup.SaveConfig(botConfig);
+                            await message.Channel.SendMessageAsync($"Rotating color role set to ``{message.MentionedRoles.FirstOrDefault().Name}``");
+                        }
+                        else
+                        {
+                            await message.Channel.SendMessageAsync($"You must mention exactly one role for this command\nExample: ``{prefix}color set @chameleon``");
+                        }
+
+                        return;
+                    case "unset":
+                        botConfig.ColorRoleID = 0;
+                        BotStartup.SaveConfig(botConfig);
+                        await message.Channel.SendMessageAsync("Rotating color role has been unset");
+                        return;
                 }
-                else
-                {
-                    await message.Channel.SendMessageAsync($"This module (``color``) is disabled");
-                }
+            }
+
+            if (botConfig.ColorEnabled)
+            {
+                await UserAction(message, colorChoices, prefix);
+            }
+            else
+            {
+                await message.Channel.SendMessageAsync($"This module (``color``) is disabled");
             }
         }
 
         public async Task UserAction(SocketMessage message, ConcurrentDictionary<ulong, string> colorChoices, string prefix)
         {
             string[] msg = message.Content.ToLower().Split(new string[] { " " }, System.StringSplitOptions.RemoveEmptyEntries);
+            if (msg.Length < 2)
+            {
+                return;
+            }
             switch (msg[1])
             {
 

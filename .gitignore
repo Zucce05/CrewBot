@@ -341,3 +341,24 @@ healthchecksdb
 
 # My files
 CrewBot/json/BotConfig.json
+
+# Local AI tooling files
+.clinerules/
+AGENTS.md
+codex_global_AGENTS.template.md
+
+# CrewBot generated runtime state
+CrewBot/json/logs/
+CrewBot/json/runtime/
+CrewBot/json/messageCache.json
+CrewBot/json/voidMessages.json
+CrewBot/json/*.bak
+CriticalLog.txt
+DebugLog.txt
+ErrorLog.txt
+InfoLog.txt
+VerboseLog.txt
+WarningLog.txt
+
+# Legacy local data outside the project data directory
+/json/
